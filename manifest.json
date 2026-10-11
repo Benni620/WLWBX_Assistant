@@ -1,0 +1,13 @@
+{
+  "domain": "wlwbx",
+  "name": "WLWBX Wallbox",
+  "codeowners": ["@Benni620"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/Benni620/WLWB_Assistant",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/Benni620/WLWB_Assistant/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
