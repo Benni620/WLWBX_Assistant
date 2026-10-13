@@ -77,24 +77,23 @@ class WlwbxApiClient:
             await resp.release()
             await self.async_login()
             resp = await _do()
-
-        if resp.status == 403:
-            await resp.release()
-            raise WlwbxAuthError(
-                f"{method} {path}: 403 – Rolle '{self._username}' nicht berechtigt"
-            )
-        if resp.status == 404:
-            await resp.release()
-            raise WlwbxApiError(f"{path} ist auf dieser Wallbox nicht implementiert")
-        if resp.status == 204 or method == "PUT":
-            text = await resp.text()
+        try:
+            if resp.status == 403:
+                raise WlwbxAuthError(
+                    f"{method} {path}: 403 – Rolle '{self._username}' nicht berechtigt"
+                )
+            if resp.status == 404:
+                raise WlwbxApiError(f"{path} ist auf dieser Wallbox nicht implementiert")
+            if resp.status == 204:
+                return None
             resp.raise_for_status()
-            return json or ({"value": text} if text else None)
-        resp.raise_for_status()
-        if not resp.content_type.startswith("application/json"):
-            await resp.release()
-            return None
-        return await resp.json()
+            if not resp.content_type.startswith("application/json"):
+                text = await resp.text()
+                return {"value": text} if text else None
+            return await resp.json()
+        finally:
+            if not resp.closed:
+                resp.release()
 
     # --- GET helpers -------------------------------------------------
     async def async_get(self, path: str) -> Any:

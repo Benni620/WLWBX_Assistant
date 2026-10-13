@@ -12,7 +12,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .api import WlwbxApiClient, WlwbxApiError
-from .const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import CONF_HOST, CONF_PASSWORD, CONF_SERIAL, CONF_USERNAME, DEFAULT_SCAN_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = [Platform.NUMBER, Platform.SENSOR, Platform.SWITCH, Platform.UPDATE]
@@ -23,6 +23,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     api = WlwbxApiClient(
         entry.data[CONF_HOST], entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD]
     )
+    # --- Seriennummer einmalig ermitteln und in entry.data cachen ---
+    # Das machen wir VOR dem Coordinator, damit die Entities später eine
+    # stabile unique_id bekommen – unabhängig davon, ob die Box den
+    # /system/electronic-typeplate-Endpoint beim ersten Poll liefert.
+    if CONF_SERIAL not in entry.data:
+        try:
+            typeplate = await api.async_get("/system/electronic-typeplate")
+            serial = (typeplate or {}).get("serialNumber")
+        except WlwbxApiError as err:
+            _LOGGER.debug(
+                "Seriennummer beim Setup nicht ermittelbar: %s", err
+            )
+            serial = None
+
+        if serial:
+            new_data = {**entry.data, CONF_SERIAL: serial}
+            hass.config_entries.async_update_entry(entry, data=new_data)
+
 
     # Mapping API-Endpoint -> Schlüssel im Coordinator-Dict.
     # Mit None markierte Calls schlagen optional fehl (z.B. 404 je nach Modell).

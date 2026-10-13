@@ -8,7 +8,7 @@ from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 
-from .api import WlwbxApiClient, WlwbxApiError
+from .api import WlwbxApiClient, WlwbxApiError, WlwbxAuthError
 from .const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -30,10 +30,13 @@ async def _test_connection(hass: HomeAssistant, data: dict[str, str]) -> None:
     try:
         await client.async_login()
         # Ein lesender Aufruf gegen die Rolle prüfen
-        await client.async_get_charging_state()
-    except WlwbxApiError:
-        # 404 je nach Modell ok – Login hat funktioniert
-        pass
+        try:
+            await client.async_get_charging_state()
+        except WlwbxApiError:
+            # 404 ok – Modell hat den Endpoint nicht
+            pass    
+    except WlwbxAuthError:
+        raise  # weiterreichen, damit der Flow "invalid_auth" zeigt
     finally:
         await client.close()
 
@@ -51,6 +54,8 @@ class WlwbxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             try:
                 await _test_connection(self.hass, user_input)
+            except WlwbxAuthError:
+                errors["base"] = "invalid_auth"
             except aiohttp.ClientError:
                 errors["base"] = "cannot_connect"
             except Exception:  # noqa: BLE001
