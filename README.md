@@ -1,4 +1,7 @@
 # WLWB Assistant
+
+**Still in progress**
+
 This project is based on on the official API documetation of the Stecka charger:
 [WLWBX REST API](https://public.evse-manuals.com/steca/de/specs/api.html#description/introduction)
 
