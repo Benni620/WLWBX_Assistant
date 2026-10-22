@@ -12,7 +12,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .api import WlwbxApiClient, WlwbxApiError
-from .const import CONF_HOST, CONF_PASSWORD, CONF_SERIAL, CONF_USERNAME, DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import CONF_HOST, CONF_PASSWORD, CONF_SERIAL, CONF_USERNAME, CONF_VERIFY_SSL, DEFAULT_SCAN_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = [Platform.NUMBER, Platform.SENSOR, Platform.SWITCH, Platform.UPDATE]
@@ -21,7 +21,7 @@ PLATFORMS = [Platform.NUMBER, Platform.SENSOR, Platform.SWITCH, Platform.UPDATE]
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up WLWBX from a config entry."""
     api = WlwbxApiClient(
-        entry.data[CONF_HOST], entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD]
+        entry.data[CONF_HOST], entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD], verify_ssl=entry.data.get(CONF_VERIFY_SSL, True),
     )
     # --- Seriennummer einmalig ermitteln und in entry.data cachen ---
     # Das machen wir VOR dem Coordinator, damit die Entities später eine

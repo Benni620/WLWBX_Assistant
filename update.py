@@ -11,7 +11,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import WlwbxEntity
+from .entity import WlwbxEntity
 from .const import DOMAIN
 
 # UpdateProgress.state -> HA in_progress
@@ -80,7 +80,7 @@ class WlwbxUpdateEntity(WlwbxEntity, UpdateEntity):
     def in_progress(self) -> bool | int:
         state = self._progress().get("state")
         if state in INSTALLING_STATES or state in DOWNLOADING_STATES:
-            return self._progress().get("progress", 0)
+            return max(1, int(self._progress().get("progress", 0)))
         return False
 
     async def async_install(self, version: str | None, backup: bool, **kwargs: Any) -> None:

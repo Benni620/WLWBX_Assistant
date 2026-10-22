@@ -13,7 +13,8 @@ from homeassistant.const import UnitOfEnergy, UnitOfPower, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import WlwbxEntity
+from .entity import WlwbxEntity
+from .const import DOMAIN
 
 STATE_ICONS = {
     "Charging": "mdi:ev-station",
@@ -26,7 +27,7 @@ STATE_ICONS = {
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    coordinator = hass.data["wlwbx"][entry.entry_id]["coordinator"]
+    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     entities: list[SensorEntity] = [
         WlwbxSensor(coordinator, entry, "state", "Ladezustand", icon="mdi:ev-station"),
         WlwbxSensor(
@@ -37,7 +38,7 @@ async def async_setup_entry(
         WlwbxSensor(
             coordinator, entry, "session_energy", "Energie aktuelle Session",
             device_class=SensorDeviceClass.ENERGY, unit=UnitOfEnergy.KILO_WATT_HOUR,
-            state_class=SensorStateClass.TOTAL_INCREASING,
+            state_class=SensorStateClass.MEASUREMENT,
         ),
         WlwbxSensor(
             coordinator, entry, "session_soc", "SOC",
@@ -78,9 +79,7 @@ class WlwbxSensor(WlwbxEntity, SensorEntity):
         self._attr_device_class = device_class
         self._attr_native_unit_of_measurement = unit
         self._attr_state_class = state_class
-        if kind == "state" and icon is None:
-            icon = "mdi:ev-station"
-        self._attr_icon = icon
+        self._attr_icon = icon or ("mdi:ev-station" if kind == "state" else None)
 
     def _value(self, kind: str) -> Any:
         data = self.coordinator.data

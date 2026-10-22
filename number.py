@@ -9,7 +9,7 @@ from homeassistant.const import UnitOfElectricCurrent
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import WlwbxEntity
+from .entity import WlwbxEntity
 from .const import DOMAIN
 
 

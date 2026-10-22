@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 
 from .api import WlwbxApiClient, WlwbxApiError, WlwbxAuthError
-from .const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, DOMAIN
+from .const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, CONF_VERIFY_SSL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,6 +18,8 @@ STEP_USER_SCHEMA = vol.Schema(
         vol.Required(CONF_HOST): str,
         vol.Required(CONF_USERNAME, default="technician"): str,
         vol.Required(CONF_PASSWORD): str,
+        # Bei selbst signiertem Zertifikat (https) standardmäßig aus
+        vol.Optional(CONF_VERIFY_SSL, default=False): bool,
     }
 )
 
@@ -25,7 +27,7 @@ STEP_USER_SCHEMA = vol.Schema(
 async def _test_connection(hass: HomeAssistant, data: dict[str, str]) -> None:
     """Raise on connection or auth failure."""
     client = WlwbxApiClient(
-        data[CONF_HOST], data[CONF_USERNAME], data[CONF_PASSWORD]
+        data[CONF_HOST], data[CONF_USERNAME], data[CONF_PASSWORD], verify_ssl=data.get(CONF_VERIFY_SSL, True),
     )
     try:
         await client.async_login()

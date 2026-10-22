@@ -6,6 +6,11 @@ import aiohttp
 
 _LOGGER = logging.getLogger(__name__)
 
+def _build_base_url(host: str) -> str:
+    """Scheme ergänzen, falls nur IP/Hostname eingegeben wurde."""
+    if not host.startswith(("http://", "https://")):
+        host = "http://" + host
+    return host.rstrip("/") + "/api/v2"
 
 class WlwbxApiError(Exception):
     """Base exception."""
@@ -18,17 +23,20 @@ class WlwbxAuthError(WlwbxApiError):
 class WlwbxApiClient:
     """Wraps the wallbox REST API with automatic JWT login/refresh."""
 
-    def __init__(self, host: str, username: str, password: str) -> None:
+    def __init__(self, host: str, username: str, password: str, verify_ssl: bool = True) -> None:
         self._base = host.rstrip("/") + "/api/v2"
         self._username = username
         self._password = password
+        self._verify_ssl = verify_ssl
         self._token: str | None = None
         self._session: aiohttp.ClientSession | None = None
 
     async def _ensure_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
+            connector = aiohttp.TCPConnector(ssl=self._verify_ssl)
             self._session = aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=10)
+                connector=connector,
+                timeout=aiohttp.ClientTimeout(total=10),
             )
         return self._session
 
