@@ -1,6 +1,6 @@
 # WLWBX Assistant
 
-⚠️ **Still in progress** ⚠️
+⚠️ **Still in progress!** ⚠️
 
 The project is based on on the official API documetation of the Steca Charger:
 [WLWBX REST API](https://public.evse-manuals.com/steca/de/specs/api.html#description/introduction)
@@ -9,7 +9,7 @@ This is an integration of the Steca Charger for Home Assistant
 
 The code is made with support of AI!
 
-## Fatures
+## Features
 
 | Feature | Steca Charger| 
 |------------|:--------------:|
@@ -30,7 +30,7 @@ The code is made with support of AI!
 | performs the reboot action |🔵|
 
 
-🟢 Implemeted an tested
+🟢 Implemented an tested
 🟡 Implemented, has to be tested
 🔴 not working
 🔵 planed
@@ -42,11 +42,11 @@ The code is made with support of AI!
    
 ## Configuration
 1. go to Settings
-2. open Devices & services
-3. klick on Add integration on the right side
+2. open "Devices & Services"
+3. click on "Add integration" on the right side
 4. search for "WLWBX Assistant"
-5. write the the necessary information into the filds
-  - Host: the IP-adress or Hostname of the box
+5. write the the necessary informations into the fields
+  - Host: the IP-adress or hostname of the box
   - Username: technician (don´t change that)
   - Password: Your technician password
   - verify_ssl: check this only if you use a reverse proxy with ssl
