@@ -27,15 +27,28 @@ class UserLimitCurrent(WlwbxEntity, NumberEntity):
     _attr_icon = "mdi:current-ac"
     _attr_native_unit_of_measurement = UnitOfElectricCurrent.AMPERE
     _attr_mode = "box"
+    _attr_native_min_value = 6.0
+    _attr_native_step = 1.0
 
     def __init__(self, coordinator, entry, api) -> None:
         super().__init__(coordinator, entry, "user_limit_current")
         self._api = api
         self._attr_name = "Wallbox Max. Ladestrom"
-        limits = coordinator.data.get("limits") or {}
-        self._attr_native_min_value = 6.0
-        self._attr_native_max_value = float(limits.get("maxCurrent", 32))
-        self._attr_native_step = 1.0
+
+    @property
+    def native_max_value(self) -> float:
+        # Dynamisch aus /charging/limits; maxCurrent kann 0 sein
+        # (z.B. wenn nicht geladen wird) -> dann Fallback 32 A.
+        limits = self.coordinator.data.get("limits") or {}
+        max_current = limits.get("maxCurrent")
+        if isinstance(max_current, (int, float)) and max_current >= self._attr_native_min_value:
+            return float(max_current)
+        return 32.0
+
+    @property
+    def available(self) -> bool:
+        # Endpunkt nicht implementiert (404) -> Entity ausblenden
+        return self.coordinator.data.get("user_limit_current") is not None
 
     @property
     def native_value(self) -> float | None:

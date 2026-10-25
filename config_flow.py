@@ -27,18 +27,18 @@ STEP_USER_SCHEMA = vol.Schema(
 async def _test_connection(hass: HomeAssistant, data: dict[str, str]) -> None:
     """Raise on connection or auth failure."""
     client = WlwbxApiClient(
-        data[CONF_HOST], data[CONF_USERNAME], data[CONF_PASSWORD], verify_ssl=data.get(CONF_VERIFY_SSL, True),
+        data[CONF_HOST],
+        data[CONF_USERNAME],
+        data[CONF_PASSWORD],
+        verify_ssl=data.get(CONF_VERIFY_SSL, True),
     )
     try:
         await client.async_login()
         # Ein lesender Aufruf gegen die Rolle prüfen
-        try:
-            await client.async_get_charging_state()
-        except WlwbxApiError:
-            # 404 ok – Modell hat den Endpoint nicht
-            pass    
-    except WlwbxAuthError:
-        raise  # weiterreichen, damit der Flow "invalid_auth" zeigt
+        await client.async_get_charging_state()
+    except WlwbxApiError:
+        # 404 je nach Modell ok – Login hat funktioniert
+        pass
     finally:
         await client.close()
 

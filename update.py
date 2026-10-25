@@ -58,14 +58,16 @@ class WlwbxUpdateEntity(WlwbxEntity, UpdateEntity):
 
     @property
     def latest_version(self) -> str | None:
-        # Ein Update ist nur "verfügbar", wenn die Box es auch lokal heruntergeladen hat
+        # Laufendes Update hat Vorrang, dann verfügbares Update.
+        # Ohne Update: installierte Version zeigen -> "auf dem neuesten Stand".
         progress_state = self._progress().get("state")
         if progress_state in ("pending", "installing", "rebooting"):
             running = self._info().get("runningUpdate") or {}
-            return running.get("version") or self._info().get("availableUpdate", {}).get("version")
-        if progress_state == "postponed":
-            return self._info().get("availableUpdate", {}).get("version")
-        return (self._info().get("availableUpdate") or {}).get("version")
+            return running.get("version") or self.installed_version
+        available = (self._info().get("availableUpdate") or {}).get("version")
+        if available:
+            return available
+        return self.installed_version
 
     @property
     def release_summary(self) -> str | None:
@@ -80,7 +82,7 @@ class WlwbxUpdateEntity(WlwbxEntity, UpdateEntity):
     def in_progress(self) -> bool | int:
         state = self._progress().get("state")
         if state in INSTALLING_STATES or state in DOWNLOADING_STATES:
-            return max(1, int(self._progress().get("progress", 0)))
+            return self._progress().get("progress", 0)
         return False
 
     async def async_install(self, version: str | None, backup: bool, **kwargs: Any) -> None:

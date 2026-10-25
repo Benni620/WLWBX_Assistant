@@ -1,16 +1,19 @@
 """Async REST client for the WLWBX API v2."""
 import logging
+from json import loads as json_loads
 from typing import Any
 
 import aiohttp
 
 _LOGGER = logging.getLogger(__name__)
 
+
 def _build_base_url(host: str) -> str:
     """Scheme ergänzen, falls nur IP/Hostname eingegeben wurde."""
     if not host.startswith(("http://", "https://")):
         host = "http://" + host
     return host.rstrip("/") + "/api/v2"
+
 
 class WlwbxApiError(Exception):
     """Base exception."""
@@ -23,8 +26,10 @@ class WlwbxAuthError(WlwbxApiError):
 class WlwbxApiClient:
     """Wraps the wallbox REST API with automatic JWT login/refresh."""
 
-    def __init__(self, host: str, username: str, password: str, verify_ssl: bool = True) -> None:
-        self._base = host.rstrip("/") + "/api/v2"
+    def __init__(
+        self, host: str, username: str, password: str, verify_ssl: bool = True
+    ) -> None:
+        self._base = _build_base_url(host)
         self._username = username
         self._password = password
         self._verify_ssl = verify_ssl
@@ -45,6 +50,21 @@ class WlwbxApiClient:
             await self._session.close()
         self._token = None
 
+    # --- für SSE-Subscriber zugängliche Interna ----------------------
+    @property
+    def base_url(self) -> str:
+        """Basis-URL inkl. /api/v2 (für z.B. /events-Stream)."""
+        return self._base
+
+    @property
+    def token(self) -> str | None:
+        """Aktueller Bearer-Token (None = nicht eingeloggt)."""
+        return self._token
+
+    @property
+    def verify_ssl(self) -> bool:
+        return self._verify_ssl
+
     async def async_login(self) -> str:
         """POST /jwt/login (form-urlencoded), token from Authorization header."""
         session = await self._ensure_session()
@@ -64,44 +84,54 @@ class WlwbxApiClient:
             self._token = auth.removeprefix("Bearer ").strip()
             return self._token
 
+    async def _attempt(
+        self, method: str, path: str, json: dict[str, Any] | None = None
+    ) -> tuple[int, bytes]:
+        """Führt einen Request aus und liefert (status, roher Body)."""
+        session = await self._ensure_session()
+        async with session.request(
+            method,
+            f"{self._base}{path}",
+            json=json,
+            headers={"Authorization": f"Bearer {self._token}"},
+        ) as resp:
+            return resp.status, await resp.read()
+
     async def _request(
         self, method: str, path: str, json: dict[str, Any] | None = None
     ) -> Any:
-        session = await self._ensure_session()
         if self._token is None:
             await self.async_login()
 
-        async def _do() -> aiohttp.ClientResponse:
-            return session.request(
-                method,
-                f"{self._base}{path}",
-                json=json,
-                headers={"Authorization": f"Bearer {self._token}"},
+        status, raw = await self._attempt(method, path, json)
+
+        # Token abgelaufen -> einmal neu einloggen und wiederholen
+        if status == 401:
+            await self.async_login()
+            status, raw = await self._attempt(method, path, json)
+
+        if status == 403:
+            raise WlwbxAuthError(
+                f"{method} {path}: 403 – Rolle '{self._username}' nicht berechtigt"
+            )
+        if status == 404:
+            detail = raw[:200].decode(errors="replace")
+            raise WlwbxApiError(
+                f"{method} {path}: 404 – "
+                f"nicht implementiert? Body: {detail or '<leer>'}"
+            )
+        if status >= 400:
+            detail = raw[:200].decode(errors="replace")
+            raise WlwbxApiError(
+                f"{method} {path}: HTTP {status} – Body: {detail or '<leer>'}"
             )
 
-        resp = await _do()
-        # Token abgelaufen -> einmal neu einloggen und wiederholen
-        if resp.status == 401:
-            await resp.release()
-            await self.async_login()
-            resp = await _do()
+        if status == 204 or not raw:
+            return None
         try:
-            if resp.status == 403:
-                raise WlwbxAuthError(
-                    f"{method} {path}: 403 – Rolle '{self._username}' nicht berechtigt"
-                )
-            if resp.status == 404:
-                raise WlwbxApiError(f"{path} ist auf dieser Wallbox nicht implementiert")
-            if resp.status == 204:
-                return None
-            resp.raise_for_status()
-            if not resp.content_type.startswith("application/json"):
-                text = await resp.text()
-                return {"value": text} if text else None
-            return await resp.json()
-        finally:
-            if not resp.closed:
-                resp.release()
+            return json_loads(raw)
+        except ValueError:
+            return None
 
     # --- GET helpers -------------------------------------------------
     async def async_get(self, path: str) -> Any:
@@ -136,10 +166,11 @@ class WlwbxApiClient:
         )
 
     async def async_get_free_charging(self) -> bool:
-        return (await self.async_get("/charging/free-charging")).get("value") is True
+        return (await self.async_get("/charging/free-charging")).get("enabled") is True
 
     async def async_set_free_charging(self, enabled: bool) -> None:
-        await self.async_put("/charging/free-charging", {"value": enabled})
+        # Achtung: Feld heißt "enabled", nicht "value" (OpenAPI-Schema "Enabled")
+        await self.async_put("/charging/free-charging", {"enabled": bool(enabled)})
 
     async def async_get_update_info(self) -> dict[str, Any] | None:
         return await self.async_get("/system/update/info")

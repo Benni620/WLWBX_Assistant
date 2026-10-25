@@ -37,6 +37,11 @@ class ChargingAllowedSwitch(WlwbxEntity, SwitchEntity):
         self._attr_name = "Wallbox Laden erlaubt"
 
     @property
+    def available(self) -> bool:
+        # Endpunkt nicht implementiert (404) -> Entity ausblenden
+        return self.coordinator.data.get("direct_authorization") is not None
+
+    @property
     def is_on(self) -> bool | None:
         value = (self.coordinator.data.get("direct_authorization") or {}).get("value")
         return None if value == "unknown" else value == "allowed"
@@ -61,8 +66,13 @@ class FreeChargingSwitch(WlwbxEntity, SwitchEntity):
         self._attr_name = "Wallbox Freies Laden"
 
     @property
+    def available(self) -> bool:
+        # Endpunkt nicht implementiert (404) -> Entity ausblenden
+        return self.coordinator.data.get("free_charging") is not None
+
+    @property
     def is_on(self) -> bool | None:
-        value = (self.coordinator.data.get("free_charging") or {}).get("value")
+        value = (self.coordinator.data.get("free_charging") or {}).get("enabled")
         return value is True
 
     async def async_turn_on(self, **kwargs: Any) -> None:

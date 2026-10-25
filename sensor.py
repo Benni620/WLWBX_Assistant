@@ -27,7 +27,7 @@ STATE_ICONS = {
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+    coordinator = hass.data["wlwbx"][entry.entry_id]["coordinator"]
     entities: list[SensorEntity] = [
         WlwbxSensor(coordinator, entry, "state", "Ladezustand", icon="mdi:ev-station"),
         WlwbxSensor(
@@ -38,7 +38,7 @@ async def async_setup_entry(
         WlwbxSensor(
             coordinator, entry, "session_energy", "Energie aktuelle Session",
             device_class=SensorDeviceClass.ENERGY, unit=UnitOfEnergy.KILO_WATT_HOUR,
-            state_class=SensorStateClass.MEASUREMENT,
+            state_class=SensorStateClass.TOTAL_INCREASING,
         ),
         WlwbxSensor(
             coordinator, entry, "session_soc", "SOC",
@@ -55,6 +55,32 @@ async def async_setup_entry(
             coordinator, entry, "lifetime_energy", "Gesamtenergie",
             device_class=SensorDeviceClass.ENERGY, unit=UnitOfEnergy.KILO_WATT_HOUR,
             state_class=SensorStateClass.TOTAL_INCREASING,
+        ),
+        WlwbxSensor(
+            coordinator, entry, "lifetime_charging_time", "Gesamte Ladezeit",
+            device_class=SensorDeviceClass.DURATION, unit=UnitOfTime.HOURS,
+            state_class=SensorStateClass.TOTAL_INCREASING,
+            icon="mdi:clock-outline",
+        ),
+        WlwbxSensor(
+            coordinator, entry, "curve_power_total", "Ladeleistung (Kurve)",
+            device_class=SensorDeviceClass.POWER, unit=UnitOfPower.WATT,
+            state_class=SensorStateClass.MEASUREMENT, icon="mdi:speedometer",
+        ),
+        WlwbxSensor(
+            coordinator, entry, "curve_power_l1", "Ladeleistung L1",
+            device_class=SensorDeviceClass.POWER, unit=UnitOfPower.WATT,
+            state_class=SensorStateClass.MEASUREMENT, icon="mdi:speedometer",
+        ),
+        WlwbxSensor(
+            coordinator, entry, "curve_power_l2", "Ladeleistung L2",
+            device_class=SensorDeviceClass.POWER, unit=UnitOfPower.WATT,
+            state_class=SensorStateClass.MEASUREMENT, icon="mdi:speedometer",
+        ),
+        WlwbxSensor(
+            coordinator, entry, "curve_power_l3", "Ladeleistung L3",
+            device_class=SensorDeviceClass.POWER, unit=UnitOfPower.WATT,
+            state_class=SensorStateClass.MEASUREMENT, icon="mdi:speedometer",
         ),
         WlwbxSensor(
             coordinator, entry, "meter_energy", "Energiezähler",
@@ -79,7 +105,9 @@ class WlwbxSensor(WlwbxEntity, SensorEntity):
         self._attr_device_class = device_class
         self._attr_native_unit_of_measurement = unit
         self._attr_state_class = state_class
-        self._attr_icon = icon or ("mdi:ev-station" if kind == "state" else None)
+        if kind == "state" and icon is None:
+            icon = "mdi:ev-station"
+        self._attr_icon = icon
 
     def _value(self, kind: str) -> Any:
         data = self.coordinator.data
@@ -103,6 +131,28 @@ class WlwbxSensor(WlwbxEntity, SensorEntity):
         if kind == "lifetime_energy":
             wh = (data.get("lifetime") or {}).get("totalEnergy")
             return round(wh / 1000, 2) if wh is not None else None
+        if kind == "lifetime_charging_time":
+            secs = (data.get("lifetime") or {}).get("totalChargingTime")
+            return round(secs / 3600, 1) if secs is not None else None
+        if kind.startswith("curve_"):
+            # Letzten Datenpunkt der Ladekurve auswerten
+            points = (data.get("charging_curve") or {}).get("curvePoints") or []
+            if not points:
+                return None
+            last = points[-1]
+            if kind == "curve_power_total":
+                return round(
+                    (last.get("powerL1") or 0)
+                    + (last.get("powerL2") or 0)
+                    + (last.get("powerL3") or 0),
+                    1,
+                )
+            if kind == "curve_power_l1":
+                return last.get("powerL1")
+            if kind == "curve_power_l2":
+                return last.get("powerL2")
+            if kind == "curve_power_l3":
+                return last.get("powerL3")
         if kind == "meter_energy":
             wh = (data.get("energy_meter") or {}).get("energyAmount")
             return round(wh / 1000, 2) if wh is not None else None
@@ -110,8 +160,23 @@ class WlwbxSensor(WlwbxEntity, SensorEntity):
             return (data.get("device_state") or {}).get("systemState")
         if kind == "error_count":
             errors = data.get("errors")
-            return len(errors) if isinstance(errors, list) else 0
+            if not isinstance(errors, list):
+                return 0
+            return len(
+                [e for e in errors if (e or {}).get("status") == "active"]
+            )
         return None
+
+    @property
+    def extra_state_attributes(self) -> dict | None:
+        # Aktive Fehler als DTC-Liste, z.B. {"error_1": "DTCHIGHTEMP"}
+        if self._kind != "error_count":
+            return None
+        errors = self.coordinator.data.get("errors")
+        if not isinstance(errors, list):
+            return None
+        active = [e for e in errors if (e or {}).get("status") == "active"]
+        return {f"error_{i + 1}": e.get("dtc") for i, e in enumerate(active)}
 
     @property
     def native_value(self) -> Any:

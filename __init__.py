@@ -12,7 +12,8 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .api import WlwbxApiClient, WlwbxApiError
-from .const import CONF_HOST, CONF_PASSWORD, CONF_SERIAL, CONF_USERNAME, CONF_VERIFY_SSL, DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, CONF_VERIFY_SSL, DEFAULT_SCAN_INTERVAL, DOMAIN
+from .sse import WlwbxEventSubscriber
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = [Platform.NUMBER, Platform.SENSOR, Platform.SWITCH, Platform.UPDATE]
@@ -21,26 +22,11 @@ PLATFORMS = [Platform.NUMBER, Platform.SENSOR, Platform.SWITCH, Platform.UPDATE]
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up WLWBX from a config entry."""
     api = WlwbxApiClient(
-        entry.data[CONF_HOST], entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD], verify_ssl=entry.data.get(CONF_VERIFY_SSL, True),
+        entry.data[CONF_HOST],
+        entry.data[CONF_USERNAME],
+        entry.data[CONF_PASSWORD],
+        verify_ssl=entry.data.get(CONF_VERIFY_SSL, True),
     )
-    # --- Seriennummer einmalig ermitteln und in entry.data cachen ---
-    # Das machen wir VOR dem Coordinator, damit die Entities später eine
-    # stabile unique_id bekommen – unabhängig davon, ob die Box den
-    # /system/electronic-typeplate-Endpoint beim ersten Poll liefert.
-    if CONF_SERIAL not in entry.data:
-        try:
-            typeplate = await api.async_get("/system/electronic-typeplate")
-            serial = (typeplate or {}).get("serialNumber")
-        except WlwbxApiError as err:
-            _LOGGER.debug(
-                "Seriennummer beim Setup nicht ermittelbar: %s", err
-            )
-            serial = None
-
-        if serial:
-            new_data = {**entry.data, CONF_SERIAL: serial}
-            hass.config_entries.async_update_entry(entry, data=new_data)
-
 
     # Mapping API-Endpoint -> Schlüssel im Coordinator-Dict.
     # Mit None markierte Calls schlagen optional fehl (z.B. 404 je nach Modell).
@@ -56,6 +42,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "device_state": "/system/device-state",
         "typeplate": "/system/electronic-typeplate",
         "errors": "/system/errors",
+        "charging_curve": "/dashboard/charging-curve",
         "update_info": "/system/update/info",
         "update_progress": "/system/update/progress",
     }
@@ -91,7 +78,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "api": api,
         "coordinator": coordinator,
     }
-    await hass.config_entries.async_forward_platform_setups(entry, PLATFORMS)
+
+    # SSE-Stream für Echtzeitwerte starten (Polling bleibt als Fallback)
+    subscriber = WlwbxEventSubscriber(api, coordinator)
+    hass.data[DOMAIN][entry.entry_id]["subscriber"] = subscriber
+    entry.async_create_background_task(
+        hass, subscriber.start(), f"{DOMAIN}-sse-{entry.entry_id}"
+    )
+
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
@@ -102,5 +97,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     if unload_ok:
         store = hass.data[DOMAIN].pop(entry.entry_id)
+        await store["subscriber"].astop()
         await store["api"].close()
     return unload_ok
