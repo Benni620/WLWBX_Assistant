@@ -135,24 +135,29 @@ class WlwbxSensor(WlwbxEntity, SensorEntity):
             secs = (data.get("lifetime") or {}).get("totalChargingTime")
             return round(secs / 3600, 1) if secs is not None else None
         if kind.startswith("curve_"):
-            # Letzten Datenpunkt der Ladekurve auswerten
+            # Letzten Datenpunkt der Ladekurve auswerten.
+            # Achtung: Leistungswerte der Kurve sind in kW!
             points = (data.get("charging_curve") or {}).get("curvePoints") or []
             if not points:
                 return None
             last = points[-1]
+
+            def _kw_to_w(kw: Any) -> float | None:
+                return round(kw * 1000, 1) if kw is not None else None
+
             if kind == "curve_power_total":
-                return round(
+                total = (
                     (last.get("powerL1") or 0)
                     + (last.get("powerL2") or 0)
-                    + (last.get("powerL3") or 0),
-                    1,
+                    + (last.get("powerL3") or 0)
                 )
+                return round(total * 1000, 1)
             if kind == "curve_power_l1":
-                return last.get("powerL1")
+                return _kw_to_w(last.get("powerL1"))
             if kind == "curve_power_l2":
-                return last.get("powerL2")
+                return _kw_to_w(last.get("powerL2"))
             if kind == "curve_power_l3":
-                return last.get("powerL3")
+                return _kw_to_w(last.get("powerL3"))
         if kind == "meter_energy":
             wh = (data.get("energy_meter") or {}).get("energyAmount")
             return round(wh / 1000, 2) if wh is not None else None
