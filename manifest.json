@@ -4,10 +4,10 @@
   "codeowners": ["@Benni620"],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/Benni620/WLWB_Assistant",
+  "documentation": "https://github.com/Benni620/WLWBX_Assistant",
   "integration_type": "device",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/Benni620/WLWB_Assistant/issues",
+  "issue_tracker": "https://github.com/Benni620/WLWBX_Assistant/issues",
   "requirements": [],
   "version": "0.1.0"
 }
