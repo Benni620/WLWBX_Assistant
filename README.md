@@ -2,10 +2,12 @@
 
 ⚠️ **Still in progress!** ⚠️
 
+**This project is neither developed nor supported by the wallbox manufacturer.**
+
 The project is based on on the official API documetation of the Steca Charger:
 [WLWBX REST API](https://public.evse-manuals.com/steca/de/specs/api.html#description/introduction)
 
-This is an integration of the Steca Charger for Home Assistant
+WLWBX Assistent is an unofficial Home Assistant integration.
 
 The code is made with support of AI!
 
@@ -50,3 +52,17 @@ The code is made with support of AI!
   - Username: technician (don´t change that)
   - Password: Your technician password
   - verify_ssl: check this only if you use a reverse proxy with ssl
+
+## Disclaimer
+
+This project is an independent, community-developed Home Assistant integration.
+
+It is not affiliated with, endorsed by, or sponsored by any related company.
+
+All trademarks, product names and company names are the property of their respective owners.
+
+This software is provided "as is" without warranty of any kind. Use at your own risk.
+The authors assume no responsibility for damage, data loss, charging interruptions, configuration issues, or other consequences resulting from the use of this software.
+
+
+
