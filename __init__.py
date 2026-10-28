@@ -16,7 +16,7 @@ from .const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, CONF_VERIFY_SSL, DEF
 from .sse import WlwbxEventSubscriber
 
 _LOGGER = logging.getLogger(__name__)
-PLATFORMS = [Platform.NUMBER, Platform.SENSOR, Platform.SWITCH, Platform.UPDATE]
+PLATFORMS = [Platform.BUTTON, Platform.NUMBER, Platform.SENSOR, Platform.SWITCH, Platform.UPDATE]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -48,8 +48,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     }
     REQUIRED = {"state", "limits", "direct_authorization"}
 
+    # DTC-Beschreibungen (WebUI-locales) einmalig laden und im
+    # Coordinator bereitstellen. Optional, kein harter Fehler.
+    # Sprache folgt der HA-Sprache: Deutsch -> de.json, sonst en.json.
+    ha_language = (hass.config.language or "en").split("-")[0].lower()
+    locale_language = "de" if ha_language == "de" else "en"
+    LOCALES: dict = {locale_language: None}
+    try:
+        LOCALES[locale_language] = await api.async_get_locale(locale_language)
+    except WlwbxApiError as err:
+        _LOGGER.debug(
+            "locales/default/%s.json nicht verfügbar: %s", locale_language, err
+        )
+
     async def async_update_data() -> dict:
-        data: dict = {}
+        data: dict = {"locales": LOCALES}
         for key, path in POLL_PATHS.items():
             try:
                 data[key] = await api.async_get(path)

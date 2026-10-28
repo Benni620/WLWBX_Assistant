@@ -35,6 +35,7 @@ class WlwbxApiClient:
         self._verify_ssl = verify_ssl
         self._token: str | None = None
         self._session: aiohttp.ClientSession | None = None
+        self._locales: dict[str, dict[str, Any]] = {}
 
     async def _ensure_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
@@ -64,6 +65,33 @@ class WlwbxApiClient:
     @property
     def verify_ssl(self) -> bool:
         return self._verify_ssl
+
+    @property
+    def _origin(self) -> str:
+        """URL ohne /api/v2 (für statische WebUI-Dateien wie /locales/...)."""
+        return self._base.removesuffix("/api/v2")
+
+    async def async_get_locale(self, lang: str = "de") -> dict[str, Any] | None:
+        """Lädt (und cached) die WebUI-Übersetzungsdatei locales/default/<lang>.json.
+
+        Nicht Teil der OpenAPI-Spec; enthält u.a. faultManagement.errorCause
+        mit den DTC-Beschreibungen.
+        """
+        cached = self._locales.get(lang)
+        if cached is not None:
+            return cached
+        session = await self._ensure_session()
+        url = f"{self._origin}/locales/default/{lang}.json"
+        async with session.get(url) as resp:
+            if resp.status != 200:
+                _LOGGER.debug("Locale %s nicht verfügbar: HTTP %s", lang, resp.status)
+                return None
+            try:
+                data = await resp.json()
+            except ValueError:
+                return None
+            self._locales[lang] = data
+            return data
 
     async def async_login(self) -> str:
         """POST /jwt/login (form-urlencoded), token from Authorization header."""
@@ -174,6 +202,10 @@ class WlwbxApiClient:
 
     async def async_get_update_info(self) -> dict[str, Any] | None:
         return await self.async_get("/system/update/info")
+
+    async def async_delete_errors(self) -> None:
+        """DELETE /system/errors – Fehlerliste löschen (passive Fehler)."""
+        await self._request("DELETE", "/system/errors")
 
     async def async_get_update_progress(self) -> dict[str, Any] | None:
         return await self.async_get("/system/update/progress")

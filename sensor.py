@@ -23,6 +23,19 @@ STATE_ICONS = {
     "Error": "mdi:alert-circle",
 }
 
+# API-Wert -> Key in den WebUI-locales (common.chargingState*)
+CHARGING_STATE_LOCALE_KEYS = {
+    "Unplugged": "chargingStateUnplugged",
+    "VehicleConnected": "chargingStateVehicleConnected",
+    "Authorizing": "chargingStateAuthorizing",
+    "Charging": "chargingStateCharging",
+    "ISOCharging": "chargingStateISOCharging",
+    "Paused": "chargingStatePaused",
+    "ChargingComplete": "chargingStateComplete",
+    "Error": "chargingStateError",
+    "Disabled": "chargingStateDeactivated",
+}
+
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
@@ -90,6 +103,8 @@ async def async_setup_entry(
         WlwbxSensor(coordinator, entry, "system_state", "Systemzustand"),
         WlwbxSensor(coordinator, entry, "error_count", "Aktive Fehler",
                     icon="mdi:alert-circle"),
+        WlwbxSensor(coordinator, entry, "passive_error_count", "Passive Fehler",
+                    icon="mdi:alert-circle-outline"),
     ]
     async_add_entities(entities)
 
@@ -112,7 +127,15 @@ class WlwbxSensor(WlwbxEntity, SensorEntity):
     def _value(self, kind: str) -> Any:
         data = self.coordinator.data
         if kind == "state":
-            return (data.get("state") or {}).get("value")
+            raw = (data.get("state") or {}).get("value")
+            # Anzeige übersetzen (Sprache folgt HA-Sprache); roher API-Wert
+            # bleibt als Attribut state_raw erhalten (für Automatisierungen).
+            key = CHARGING_STATE_LOCALE_KEYS.get(raw)
+            if key:
+                localized = self._locale("common", key)
+                if localized:
+                    return localized
+            return raw
         if kind.startswith("session_"):
             session = data.get("session") or {}
             if not session:
@@ -170,18 +193,82 @@ class WlwbxSensor(WlwbxEntity, SensorEntity):
             return len(
                 [e for e in errors if (e or {}).get("status") == "active"]
             )
+        if kind == "passive_error_count":
+            errors = data.get("errors")
+            if not isinstance(errors, list):
+                return 0
+            return len(
+                [e for e in errors if (e or {}).get("status") == "passive"]
+            )
+        return None
+
+    def _errors_by_status(self, status: str) -> list[dict]:
+        errors = self.coordinator.data.get("errors")
+        if not isinstance(errors, list):
+            return []
+        return [e for e in errors if (e or {}).get("status") == status]
+
+    def _locale(self, *path) -> Any:
+        """Wert aus den WebUI-locales laden (Sprache folgt HA-Sprache)."""
+        locales = self.coordinator.data.get("locales") or {}
+        # genau eine Sprache ist geladen (de oder en)
+        node: Any = next(iter(locales.values()), None) or {}
+        for part in path:
+            if not isinstance(node, dict):
+                return None
+            node = node.get(part)
+            if node is None:
+                return None
+        return node
+
+    def _dtc_text(self, table: str, dtc: str | None) -> str | None:
+        """DTC über faultManagement.errorCause / .correctiveAction auflösen."""
+        if not dtc:
+            return None
+        table_data = self._locale("faultManagement", table) or {}
+        if dtc in table_data:
+            return table_data[dtc]
+        for key, value in table_data.items():
+            if str(key).lower() == str(dtc).lower():
+                return value
         return None
 
     @property
     def extra_state_attributes(self) -> dict | None:
-        # Aktive Fehler als DTC-Liste, z.B. {"error_1": "DTCHIGHTEMP"}
-        if self._kind != "error_count":
+        # Ladezustand: deutsche Bezeichnung aus den WebUI-locales
+        if self._kind == "state":
+            raw = (self.coordinator.data.get("state") or {}).get("value")
+            attrs = {"state_raw": raw}
+            key = CHARGING_STATE_LOCALE_KEYS.get(raw)
+            if key:
+                attrs["state_localized"] = self._locale("common", key)
+            return attrs
+
+        # Fehler-Details (DTC, Ursache, Abhilfemaßnahme, Kategorie, Zeitstempel)
+        if self._kind == "error_count":
+            status = "active"
+        elif self._kind == "passive_error_count":
+            status = "passive"
+        else:
             return None
-        errors = self.coordinator.data.get("errors")
-        if not isinstance(errors, list):
-            return None
-        active = [e for e in errors if (e or {}).get("status") == "active"]
-        return {f"error_{i + 1}": e.get("dtc") for i, e in enumerate(active)}
+        attrs: dict = {}
+        for i, err in enumerate(self._errors_by_status(status)):
+            category = err.get("category")
+            attrs[f"error_{i + 1}"] = {
+                "dtc": err.get("dtc"),
+                "description": self._dtc_text("errorCause", err.get("dtc")),
+                "corrective_action": self._dtc_text(
+                    "correctiveAction", err.get("dtc")
+                ),
+                "category": category,
+                "category_localized": (
+                    self._locale("faultManagement", category)
+                    if category
+                    else None
+                ),
+                "timestamp": err.get("timestamp"),
+            }
+        return attrs
 
     @property
     def native_value(self) -> Any:
@@ -190,5 +277,7 @@ class WlwbxSensor(WlwbxEntity, SensorEntity):
     @property
     def icon(self):
         if self._kind == "state":
-            return STATE_ICONS.get(self.native_value, "mdi:ev-station")
+            # Icon nach rohem API-Wert (Sensor zeigt die Übersetzung)
+            raw = (self.coordinator.data.get("state") or {}).get("value")
+            return STATE_ICONS.get(raw, "mdi:ev-station")
         return self._attr_icon
