@@ -48,10 +48,10 @@ The code is made with support of AI!
 3. click on "Add integration" on the right side
 4. search for "WLWBX Assistant"
 5. write the the necessary informations into the fields
-  - Host: the IP-adress or hostname of the box
-  - Username: technician (don´t change that)
-  - Password: Your technician password
-  - verify_ssl: check this only if you use a reverse proxy with ssl
+     - Host: the IP-adress or hostname of the box
+     - Username: technician (don´t change that)
+     - Password: Your technician password
+     - verify_ssl: check this only if you use a reverse proxy with ssl
 
 ## Disclaimer
 
