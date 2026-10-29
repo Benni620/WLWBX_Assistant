@@ -25,7 +25,7 @@ The code is made with support of AI!
 | Get system errors |🔵|
 | Delete all errors |🔵|
 | Get electronic typeplate |🟢|
-| Get device temperatures |🔵|
+| Get device temperatures |🟡|
 | Server-sent event stream publishing events and value updates |🟡|
 | Login |🟢|
 | Refresh access token |🟢|
