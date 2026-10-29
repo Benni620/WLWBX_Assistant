@@ -100,11 +100,40 @@ async def async_setup_entry(
             device_class=SensorDeviceClass.ENERGY, unit=UnitOfEnergy.KILO_WATT_HOUR,
             state_class=SensorStateClass.TOTAL_INCREASING,
         ),
-        WlwbxSensor(coordinator, entry, "system_state", "Systemzustand"),
         WlwbxSensor(coordinator, entry, "error_count", "Aktive Fehler",
                     icon="mdi:alert-circle"),
         WlwbxSensor(coordinator, entry, "passive_error_count", "Passive Fehler",
                     icon="mdi:alert-circle-outline"),
+        WlwbxSensor(
+            coordinator, entry, "temp_relay", "Temperatur Relais",
+            device_class=SensorDeviceClass.TEMPERATURE, unit="°C",
+            state_class=SensorStateClass.MEASUREMENT, icon="mdi:thermometer",
+        ),
+        WlwbxSensor(
+            coordinator, entry, "temp_input", "Temperatur Eingangspfad",
+            device_class=SensorDeviceClass.TEMPERATURE, unit="°C",
+            state_class=SensorStateClass.MEASUREMENT, icon="mdi:thermometer",
+        ),
+        WlwbxSensor(
+            coordinator, entry, "temp_output", "Temperatur Ausgangspfad",
+            device_class=SensorDeviceClass.TEMPERATURE, unit="°C",
+            state_class=SensorStateClass.MEASUREMENT, icon="mdi:thermometer",
+        ),
+        WlwbxSensor(
+            coordinator, entry, "temp_power_controller", "Temperatur Power-Controller",
+            device_class=SensorDeviceClass.TEMPERATURE, unit="°C",
+            state_class=SensorStateClass.MEASUREMENT, icon="mdi:thermometer",
+        ),
+        WlwbxSensor(
+            coordinator, entry, "temp_comm_controller", "Temperatur Kommunikations-Controller",
+            device_class=SensorDeviceClass.TEMPERATURE, unit="°C",
+            state_class=SensorStateClass.MEASUREMENT, icon="mdi:thermometer",
+        ),
+        WlwbxSensor(
+            coordinator, entry, "temp_emmc", "Temperatur eMMC",
+            device_class=SensorDeviceClass.TEMPERATURE, unit="°C",
+            state_class=SensorStateClass.MEASUREMENT, icon="mdi:thermometer",
+        ),
     ]
     async_add_entities(entities)
 
@@ -184,8 +213,18 @@ class WlwbxSensor(WlwbxEntity, SensorEntity):
         if kind == "meter_energy":
             wh = (data.get("energy_meter") or {}).get("energyAmount")
             return round(wh / 1000, 2) if wh is not None else None
-        if kind == "system_state":
-            return (data.get("device_state") or {}).get("systemState")
+        if kind.startswith("temp_"):
+            # /system/device-temperatures, Werte in °Celsius
+            temps = data.get("temperatures") or {}
+            field = {
+                "temp_relay": "relayTemperature",
+                "temp_input": "inputPathTemperature",
+                "temp_output": "outputPathTemperature",
+                "temp_power_controller": "powerControllerTemperature",
+                "temp_comm_controller": "communicationControllerTemperature",
+                "temp_emmc": "eMmcTemperature",
+            }.get(kind)
+            return temps.get(field) if field else None
         if kind == "error_count":
             errors = data.get("errors")
             if not isinstance(errors, list):

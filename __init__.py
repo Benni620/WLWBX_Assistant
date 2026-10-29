@@ -39,8 +39,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "free_charging": "/charging/free-charging",
         "lifetime": "/charging/lifetime-stats",
         "energy_meter": "/system/energy-meter",
-        "device_state": "/system/device-state",
         "typeplate": "/system/electronic-typeplate",
+        "temperatures": "/system/device-temperatures",
         "errors": "/system/errors",
         "charging_curve": "/dashboard/charging-curve",
         "update_info": "/system/update/info",
@@ -51,8 +51,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # DTC-Beschreibungen (WebUI-locales) einmalig laden und im
     # Coordinator bereitstellen. Optional, kein harter Fehler.
     # Sprache folgt der HA-Sprache: Deutsch -> de.json, sonst en.json.
-    ha_language = (hass.config.language or "en").split("-")[0].lower()
-    locale_language = "de" if ha_language == "de" else "en"
+    # startswith("de") deckt "de", "de-DE", "de_DE", "de-CH" ab.
+    ha_language = (hass.config.language or "en").lower()
+    locale_language = "de" if ha_language.startswith("de") else "en"
     LOCALES: dict = {locale_language: None}
     try:
         LOCALES[locale_language] = await api.async_get_locale(locale_language)

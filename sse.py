@@ -24,8 +24,8 @@ EVENT_TO_POLL = {
     "chargingFreeChargingUpdate": ("free_charging", "/charging/free-charging"),
     "errorsUpdate": ("errors", "/system/errors"),
     "energyMeterUpdate": ("energy_meter", "/system/energy-meter"),
-    "deviceStateUpdate": ("device_state", "/system/device-state"),
     "electronicTypeplateUpdate": ("typeplate", "/system/electronic-typeplate"),
+    "deviceTemperaturesUpdate": ("temperatures", "/system/device-temperatures"),
     "updateInfoUpdate": ("update_info", "/system/update/info"),
 }
 
