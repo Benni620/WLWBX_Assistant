@@ -4,7 +4,7 @@
 
 **This project is neither developed nor supported by the wallbox manufacturer.**
 
-The project is based on on the official API documetation of the Steca Charger:
+The project is based on the official API documetation of the Steca Charger:
 [WLWBX REST API](https://public.evse-manuals.com/steca/de/specs/api.html#description/introduction)
 
 WLWBX Assistent is an unofficial Home Assistant integration.
@@ -31,11 +31,11 @@ The code is made with support of AI!
 | Refresh access token |🟢|
 | performs the reboot action |🔵|
 
-
+🔵 planed
 🟢 Implemented an tested
 🟡 Implemented, has to be tested
 🔴 not working
-🔵 planed
+
 
 ## Installation
 1. clone this repository
