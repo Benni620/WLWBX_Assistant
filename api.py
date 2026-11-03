@@ -9,9 +9,14 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def _build_base_url(host: str) -> str:
-    """Scheme ergänzen, falls nur IP/Hostname eingegeben wurde."""
+    """Scheme ergänzen, falls nur IP/Hostname eingegeben wurde.
+
+    Standard ist https:// (Wallbox nutzt selbstsigniertes Zertifikat,
+    verify_ssl ist im Setup standardmäßig aus). http:// muss explizit
+    angegeben werden.
+    """
     if not host.startswith(("http://", "https://")):
-        host = "http://" + host
+        host = "https://" + host
     return host.rstrip("/") + "/api/v2"
 
 
@@ -75,20 +80,37 @@ class WlwbxApiClient:
         """Lädt (und cached) die WebUI-Übersetzungsdatei locales/default/<lang>.json.
 
         Nicht Teil der OpenAPI-Spec; enthält u.a. faultManagement.errorCause
-        mit den DTC-Beschreibungen.
+        mit den DTC-Beschreibungen. Liefert None, wenn die Datei fehlt oder
+        kein JSON ist (je nach Modell/Firmware verfügbar).
         """
         cached = self._locales.get(lang)
         if cached is not None:
             return cached
+        # Manche Firmware leitet unauthentifizierte Anfragen auf die
+        # WebUI-Startseite um -> Token mitgeben, falls schon eingeloggt.
+        if self._token is None:
+            try:
+                await self.async_login()
+            except WlwbxApiError:
+                pass  # Locale laden ist optional
+        headers = {}
+        if self._token:
+            headers["Authorization"] = f"Bearer {self._token}"
         session = await self._ensure_session()
         url = f"{self._origin}/locales/default/{lang}.json"
-        async with session.get(url) as resp:
+        async with session.get(url, headers=headers) as resp:
             if resp.status != 200:
                 _LOGGER.debug("Locale %s nicht verfügbar: HTTP %s", lang, resp.status)
                 return None
             try:
-                data = await resp.json()
+                # content_type=None: manche Firmware liefert die Datei
+                # mit text/html aus -> trotzdem parsen, nur echtes
+                # ungültiges JSON führt zum Abbruch.
+                data = await resp.json(content_type=None)
             except ValueError:
+                _LOGGER.debug("Locale %s ist kein gültiges JSON", lang)
+                return None
+            if not isinstance(data, dict):
                 return None
             self._locales[lang] = data
             return data

@@ -24,23 +24,43 @@ STEP_USER_SCHEMA = vol.Schema(
 )
 
 
+def _candidate_hosts(host: str) -> list[str]:
+    """Ohne Scheme: https zuerst probieren (Box leitet http auf die
+    WebUI-Startseite um, nicht auf dieselbe URL in https)."""
+    if host.startswith(("http://", "https://")):
+        return [host]
+    return ["https://" + host, "http://" + host]
+
+
 async def _test_connection(hass: HomeAssistant, data: dict[str, str]) -> None:
-    """Raise on connection or auth failure."""
-    client = WlwbxApiClient(
-        data[CONF_HOST],
-        data[CONF_USERNAME],
-        data[CONF_PASSWORD],
-        verify_ssl=data.get(CONF_VERIFY_SSL, True),
-    )
-    try:
-        await client.async_login()
-        # Ein lesender Aufruf gegen die Rolle prüfen
-        await client.async_get_charging_state()
-    except WlwbxApiError:
-        # 404 je nach Modell ok – Login hat funktioniert
-        pass
-    finally:
-        await client.close()
+    """Raise on connection or auth failure. Probiert ggf. beide Schemes."""
+    last_err: Exception | None = None
+    for host in _candidate_hosts(data[CONF_HOST]):
+        client = WlwbxApiClient(
+            host,
+            data[CONF_USERNAME],
+            data[CONF_PASSWORD],
+            verify_ssl=data.get(CONF_VERIFY_SSL, True),
+        )
+        try:
+            await client.async_login()
+            # Ein lesender Aufruf gegen die Rolle prüfen
+            await client.async_get_charging_state()
+        except aiohttp.ClientError as err:
+            # Mit diesem Scheme nicht erreichbar -> nächstes probieren
+            last_err = err
+            continue
+        except WlwbxApiError:
+            # 404 je nach Modell ok – Verbindung steht mit diesem Scheme
+            pass
+        finally:
+            await client.close()
+        # Funktionierendes Scheme in die Eingabe zurückschreiben
+        data[CONF_HOST] = host
+        return
+    if last_err is not None:
+        raise last_err
+    raise WlwbxApiError("Kein Scheme erreichbar")
 
 
 class WlwbxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
