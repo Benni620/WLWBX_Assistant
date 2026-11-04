@@ -19,13 +19,13 @@ The code is made with support of AI!
 | Direct charging authorization ​|🟢|
 | Free charging mode |🟢|
 | Set user limit of charging current |🟢|
-| Get charging curve data​ |🟡|
-| Get lifetime statistics​ |🟡|
+| Get charging curve data​ |🟢|
+| Get lifetime statistics​ |🟢|
 | Get info about software updates of the Wallbox |🟡|
 | Get system errors |🔵|
 | Delete all errors |🔵|
 | Get electronic typeplate |🟢|
-| Get device temperatures |🟡|
+| Get device temperatures |🟢|
 | Server-sent event stream publishing events and value updates |🟡|
 | Login |🟢|
 | Refresh access token |🟢|
