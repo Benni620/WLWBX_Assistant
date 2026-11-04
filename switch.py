@@ -7,7 +7,6 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .entity import WlwbxEntity
 from .const import DOMAIN
@@ -18,41 +17,7 @@ async def async_setup_entry(
 ) -> None:
     store = hass.data[DOMAIN][entry.entry_id]
     coordinator, api = store["coordinator"], store["api"]
-    async_add_entities(
-        [
-            ChargingAllowedSwitch(coordinator, entry, api),
-            FreeChargingSwitch(coordinator, entry, api),
-        ]
-    )
-
-
-class ChargingAllowedSwitch(WlwbxEntity, SwitchEntity):
-    """Laden erlauben/sperren via /charging/direct-authorization."""
-
-    _attr_icon = "mdi:ev-station"
-
-    def __init__(self, coordinator, entry, api) -> None:
-        super().__init__(coordinator, entry, "charging_allowed")
-        self._api = api
-        self._attr_name = "Wallbox Laden erlaubt"
-
-    @property
-    def available(self) -> bool:
-        # Endpunkt nicht implementiert (404) -> Entity ausblenden
-        return self.coordinator.data.get("direct_authorization") is not None
-
-    @property
-    def is_on(self) -> bool | None:
-        value = (self.coordinator.data.get("direct_authorization") or {}).get("value")
-        return None if value == "unknown" else value == "allowed"
-
-    async def async_turn_on(self, **kwargs: Any) -> None:
-        await self._api.async_set_direct_authorization(True)
-        await self.coordinator.async_request_refresh()
-
-    async def async_turn_off(self, **kwargs: Any) -> None:
-        await self._api.async_set_direct_authorization(False)
-        await self.coordinator.async_request_refresh()
+    async_add_entities([FreeChargingSwitch(coordinator, entry, api)])
 
 
 class FreeChargingSwitch(WlwbxEntity, SwitchEntity):
