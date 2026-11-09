@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.png" width="150" title="WLWBX Assistant Logo">
+</p>
+
 # WLWBX Assistant
 
 ⚠️ **Still in progress!** ⚠️
