@@ -15,6 +15,13 @@ WLWBX Assistent is an unofficial Home Assistant integration.
 
 The code is made with support of AI!
 
+## Requirements
+
+All you need is Home Assistant and a compatible wallbox with a network connection that Home Assistant can access.
+You don't need an internet connection, a cloud account, or anything like that.
+
+Everything runs locally via the REST API on your network.
+
 ## Features
 
 | Feature | Steca Charger| 
@@ -50,7 +57,7 @@ The code is made with support of AI!
 
 ## Installation
 1. clone this repository
-2. copy the files in `/custom_components/wlwbx` in our Home Assistant
+2. copy the files from `custom_components/WLWBX_Assistant` in `/custom_components/wlwbx` in our Home Assistant
 3. reboot Home Assistant
    
 ## Configuration
