@@ -21,14 +21,20 @@ The code is made with support of AI!
 |------------|:--------------:|
 | Charging state |🟢|
 | Direct charging authorization ​|🟢|
-| Free charging mode |🟢|
+| Get Free charging mode |🟢|
+| Set Free charging mode |🟢|
+| Get user limit of charging current |🟢|
 | Set user limit of charging current |🟢|
 | Get charging curve data​ |🟢|
 | Get lifetime statistics​ |🟢|
 | Get info about software updates of the Wallbox |🟡|
+| Start software updates of the Wallbox |🟡|
 | Get system errors |🔵|
-| Delete all errors |🔵|
+| Delete all errors |🟢|
 | Get electronic typeplate |🟢|
+| Get Energy Meter information​ |🟢*|
+| Get socket outlet information |🔵*|
+| Set socket outlet information |🔵*|
 | Get device temperatures |🟢|
 | Server-sent event stream publishing events and value updates |🟡|
 | Login |🟢|
@@ -39,6 +45,7 @@ The code is made with support of AI!
 🟢 Implemented an tested
 🟡 Implemented, has to be tested
 🔴 not working
+`*` Available depending on hardware
 
 
 ## Installation
