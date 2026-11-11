@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="brands/logo.png" width="150" title="WLWBX Assistant Logo">
+  <img src="custom_components/WLWBX_Assistant/brands/logo.png" width="150" title="WLWBX Assistant Logo">
 </p>
 
 # WLWBX Assistant
