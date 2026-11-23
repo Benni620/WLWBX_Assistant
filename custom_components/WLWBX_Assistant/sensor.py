@@ -9,7 +9,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfEnergy, UnitOfPower, UnitOfTime
+from homeassistant.const import EntityCategory, UnitOfEnergy, UnitOfPower, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -101,38 +101,46 @@ async def async_setup_entry(
             state_class=SensorStateClass.TOTAL_INCREASING,
         ),
         WlwbxSensor(coordinator, entry, "error_count", "Aktive Fehler",
-                    icon="mdi:alert-circle"),
+                    icon="mdi:alert-circle",
+                    entity_category=EntityCategory.DIAGNOSTIC),
         WlwbxSensor(coordinator, entry, "passive_error_count", "Passive Fehler",
-                    icon="mdi:alert-circle-outline"),
+                    icon="mdi:alert-circle-outline",
+                    entity_category=EntityCategory.DIAGNOSTIC),
         WlwbxSensor(
             coordinator, entry, "temp_relay", "Temperatur Relais",
             device_class=SensorDeviceClass.TEMPERATURE, unit="°C",
             state_class=SensorStateClass.MEASUREMENT, icon="mdi:thermometer",
+            entity_category=EntityCategory.DIAGNOSTIC,
         ),
         WlwbxSensor(
             coordinator, entry, "temp_input", "Temperatur Eingangspfad",
             device_class=SensorDeviceClass.TEMPERATURE, unit="°C",
             state_class=SensorStateClass.MEASUREMENT, icon="mdi:thermometer",
+            entity_category=EntityCategory.DIAGNOSTIC,
         ),
         WlwbxSensor(
             coordinator, entry, "temp_output", "Temperatur Ausgangspfad",
             device_class=SensorDeviceClass.TEMPERATURE, unit="°C",
             state_class=SensorStateClass.MEASUREMENT, icon="mdi:thermometer",
+            entity_category=EntityCategory.DIAGNOSTIC,
         ),
         WlwbxSensor(
             coordinator, entry, "temp_power_controller", "Temperatur Power-Controller",
             device_class=SensorDeviceClass.TEMPERATURE, unit="°C",
             state_class=SensorStateClass.MEASUREMENT, icon="mdi:thermometer",
+            entity_category=EntityCategory.DIAGNOSTIC,
         ),
         WlwbxSensor(
             coordinator, entry, "temp_comm_controller", "Temperatur Kommunikations-Controller",
             device_class=SensorDeviceClass.TEMPERATURE, unit="°C",
             state_class=SensorStateClass.MEASUREMENT, icon="mdi:thermometer",
+            entity_category=EntityCategory.DIAGNOSTIC,
         ),
         WlwbxSensor(
             coordinator, entry, "temp_emmc", "Temperatur eMMC",
             device_class=SensorDeviceClass.TEMPERATURE, unit="°C",
             state_class=SensorStateClass.MEASUREMENT, icon="mdi:thermometer",
+            entity_category=EntityCategory.DIAGNOSTIC,
         ),
     ]
     async_add_entities(entities)
@@ -142,6 +150,7 @@ class WlwbxSensor(WlwbxEntity, SensorEntity):
     def __init__(
         self, coordinator, entry, kind: str, name: str,
         device_class=None, unit=None, state_class=None, icon=None,
+        entity_category: EntityCategory | None = None,
     ) -> None:
         super().__init__(coordinator, entry, kind)
         self._attr_translation_key = None
@@ -149,6 +158,7 @@ class WlwbxSensor(WlwbxEntity, SensorEntity):
         self._attr_device_class = device_class
         self._attr_native_unit_of_measurement = unit
         self._attr_state_class = state_class
+        self._attr_entity_category = entity_category
         if kind == "state" and icon is None:
             icon = "mdi:ev-station"
         self._attr_icon = icon
@@ -291,22 +301,27 @@ class WlwbxSensor(WlwbxEntity, SensorEntity):
         else:
             return None
         attrs: dict = {}
+        details: list[dict] = []
         for i, err in enumerate(self._errors_by_status(status)):
-            category = err.get("category")
-            attrs[f"error_{i + 1}"] = {
+            item = {
                 "dtc": err.get("dtc"),
                 "description": self._dtc_text("errorCause", err.get("dtc")),
                 "corrective_action": self._dtc_text(
                     "correctiveAction", err.get("dtc")
                 ),
-                "category": category,
+                "category": err.get("category"),
                 "category_localized": (
                     self._locale("faultManagement", category)
-                    if category
+                    if (category := err.get("category"))
                     else None
                 ),
                 "timestamp": err.get("timestamp"),
             }
+            details.append(item)
+            attrs[f"error_{i + 1}"] = item
+        # Liste als zusätzliches Attribut: ideal für Dashboard-Templates
+        # (Schleifen über attribute.errors sind einfacher als error_1..n)
+        attrs["errors"] = details
         return attrs
 
     @property
