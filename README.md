@@ -3,6 +3,7 @@
 </p>
 
 # WLWBX Assistant
+[![Open your Home Assistant instance and open a repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Benni620&repository=WLWBX_Assistant&category=integration)
 
 ⚠️ **Still in progress!** ⚠️
 
@@ -54,8 +55,11 @@ Everything runs locally via the REST API on your network.
 🔴 not working
 `*` Available depending on hardware
 
+## HACS Custom repositories Installation
+* Follow the Link below
+* https://my.home-assistant.io/redirect/hacs_repository/?owner=Benni620&repository=WLWBX_Assistant&category=integration
 
-## Installation
+## Manual Installation
 1. clone this repository
 2. copy the files from `custom_components/WLWBX_Assistant` in `/custom_components/wlwbx` in our Home Assistant
 3. reboot Home Assistant
