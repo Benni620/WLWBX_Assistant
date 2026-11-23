@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.1]
+
+### Fixed
+- Fixed integration domain mismatch preventing the configuration flow from loading.
+- Fixed integration setup in Home Assistant.
+
 ## [0.1.0] - Initial Release
 
 ### Added
