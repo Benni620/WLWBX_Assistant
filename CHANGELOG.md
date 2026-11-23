@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.2]
+
+### Fixed
+- Fixed coordinator data access across sensor, switch, number, button and update platforms.
+- Fixed integration setup in Home Assistant.
+- 
 ## [0.1.1]
 
 ### Fixed
