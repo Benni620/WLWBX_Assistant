@@ -1,7 +1,7 @@
 """Constants for the WLWBX integration."""
 from typing import Final
 
-DOMAIN: Final = "wlwbx"
+DOMAIN: Final = "WLWBX_Assistant"
 MANUFACTURER: Final = "WLWBX"
 
 CONF_HOST: Final = "host"
