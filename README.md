@@ -37,7 +37,7 @@ Everything runs locally via the REST API on your network.
 | Get lifetime statistics​ |🟢|
 | Get info about software updates of the Wallbox |🟡|
 | Start software updates of the Wallbox |🟡|
-| Get system errors |🔵|
+| Get system errors |🟡|
 | Delete all errors |🟢|
 | Get electronic typeplate |🟢|
 | Get Energy Meter information​ |🟢*|
