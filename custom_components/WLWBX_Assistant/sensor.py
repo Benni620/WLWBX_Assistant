@@ -40,7 +40,7 @@ CHARGING_STATE_LOCALE_KEYS = {
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    coordinator = hass.data["wlwbx"][entry.entry_id]["coordinator"]
+    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     entities: list[SensorEntity] = [
         WlwbxSensor(coordinator, entry, "state", "Ladezustand", icon="mdi:ev-station"),
         WlwbxSensor(
