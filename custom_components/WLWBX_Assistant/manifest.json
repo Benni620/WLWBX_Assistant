@@ -1,5 +1,5 @@
 {
-  "domain": "WLWBX_Assistant",
+  "domain": "wlwbx",
   "name": "WLWBX Wallbox",
   "codeowners": ["@Benni620"],
   "config_flow": true,
