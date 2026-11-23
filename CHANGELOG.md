@@ -1,11 +1,18 @@
 # Changelog
 
+## [v0.2.0-alpha.1] 
+
+### Added
+
 ## [0.1.2]
+
+**Monitoring & Statistics**
+- Error with text
 
 ### Fixed
 - Fixed coordinator data access across sensor, switch, number, button and update platforms.
 - Fixed integration setup in Home Assistant.
-- 
+  
 ## [0.1.1]
 
 ### Fixed
