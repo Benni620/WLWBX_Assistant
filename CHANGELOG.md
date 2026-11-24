@@ -5,8 +5,8 @@
 ###Fixed
 
 - Fixed missing file
-
-### Added
+- Fixed socket lock on cable version
+- Fixed get reboot enabled state for the reboot action
 
 ## [v0.2.0-alpha.2] 
 
