@@ -1,13 +1,24 @@
 # Changelog
 
+## [v0.2.0-alpha.2] 
+
+### Added
+
+**Charging Control**
+- Charging state with binary switches
+
+**Device Information & Maintenance**
+- perform reboot
+- get and set the state of the socket outlet
+
 ## [v0.2.0-alpha.1] 
 
 ### Added
 
-## [0.1.2]
-
 **Monitoring & Statistics**
-- Error with text
+- Errors with a complete description and corrective actions in text.
+
+## [0.1.2]
 
 ### Fixed
 - Fixed coordinator data access across sensor, switch, number, button and update platforms.
