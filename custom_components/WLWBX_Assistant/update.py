@@ -36,10 +36,13 @@ class WlwbxUpdateEntity(WlwbxEntity, UpdateEntity):
     def __init__(self, coordinator, entry, api) -> None:
         super().__init__(coordinator, entry, "firmware")
         self._api = api
-        self._attr_supported_features = (
-            UpdateEntityFeature.INSTALL
-            | UpdateEntityFeature.PROGRESS
-        )
+        # Bewusst ohne UpdateEntityFeature.INSTALL: /system/update/download
+        # und /system/update/exec sind auf realer Hardware noch nicht
+        # erprobt (siehe README "has to be tested"). Firmware nicht
+        # ungetestet auf die Ladesäule drücken. Zur Freigabe der
+        # Install-Funktion beide Endpoints verifizieren und INSTALL
+        # hier ergänzen:
+        self._attr_supported_features = UpdateEntityFeature.PROGRESS
 
     def _info(self) -> dict[str, Any]:
         return self.coordinator.data.get("update_info") or {}
@@ -85,11 +88,6 @@ class WlwbxUpdateEntity(WlwbxEntity, UpdateEntity):
             return self._progress().get("progress", 0)
         return False
 
-    async def async_install(self, version: str | None, backup: bool, **kwargs: Any) -> None:
-        """Installations-Flow: Download vom Backend (falls nötig) + Installation starten."""
-        progress_state = self._progress().get("state")
-        if progress_state == "readyToDownload":
-            await self._api.async_download_update()
-        await self._api.async_exec_update()
-        # Während der Installation (inkl. Reboot) häufiger aktualisieren
-        await self.coordinator.async_request_refresh()
+    # async_install entfernt: solange das INSTALL-Feature nicht gesetzt ist
+    # (siehe oben), wird dieser Hook von HA nie aufgerufen. Sie bleibt hier
+    # als Dokumentation bis zur Verifikation auf realer Hardware.
