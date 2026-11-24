@@ -42,6 +42,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "typeplate": "/system/electronic-typeplate",
         "temperatures": "/system/device-temperatures",
         "socket_outlet": "/system/socket-outlet",
+        "reboot_enabled": "/system/reboot/enabled",
         "errors": "/system/errors",
         "charging_curve": "/dashboard/charging-curve",
         "update_info": "/system/update/info",
