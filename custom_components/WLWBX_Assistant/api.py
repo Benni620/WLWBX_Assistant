@@ -229,6 +229,30 @@ class WlwbxApiClient:
         """DELETE /system/errors – Fehlerliste löschen (passive Fehler)."""
         await self._request("DELETE", "/system/errors")
 
+    async def async_reboot(self) -> None:
+        """Löst einen Neustart der Wallbox aus (POST /system/reboot/exec).
+
+        Die Box ist während des Neustarts nicht erreichbar; im Notlauf
+        deaktiviert die WebUI ggf. den Button (/system/reboot/enabled).
+        """
+        await self._request("POST", "/system/reboot/exec")
+
+    async def async_get_socket_outlet(self) -> dict[str, Any]:
+        """Steckdoseninformationen abrufen (GET /system/socket-outlet)."""
+        return await self.async_get("/system/socket-outlet") or {}
+
+    async def async_set_socket_outlet(self, lock_activation: str) -> None:
+        """Verriegelungsmodus setzen (PUT /system/socket-outlet).
+
+        lock_activation: "whenCableDetected" ("bei Kabelerkennung") oder
+        "duringCharging" ("während des Ladens"), Rolle: technician.
+        """
+        await self._request(
+            "PUT",
+            "/system/socket-outlet",
+            json={"lockActivation": lock_activation},
+        )
+
     async def async_get_update_progress(self) -> dict[str, Any] | None:
         return await self.async_get("/system/update/progress")
 
