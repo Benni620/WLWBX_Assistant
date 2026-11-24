@@ -1,6 +1,7 @@
 """Buttons for WLWBX (Direct Authorization = einmalige Freigabe)."""
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from homeassistant.components.button import ButtonEntity
@@ -8,8 +9,11 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .api import WlwbxApiError
 from .entity import WlwbxEntity
 from .const import DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -22,6 +26,7 @@ async def async_setup_entry(
             DirectAuthorizationButton(coordinator, entry, api, allow=True),
             DirectAuthorizationButton(coordinator, entry, api, allow=False),
             ErrorResetButton(coordinator, entry, api),
+            RebootButton(coordinator, entry, api),
         ]
     )
 
@@ -80,3 +85,30 @@ class ErrorResetButton(WlwbxEntity, ButtonEntity):
     async def async_press(self) -> None:
         await self._api.async_delete_errors()
         await self.coordinator.async_request_refresh()
+
+
+class RebootButton(WlwbxEntity, ButtonEntity):
+    """Neustart der Wallbox via POST /system/reboot/exec (Rolle: technician).
+
+    Achtung: Die Box ist während des Neustarts nicht erreichbar. HA
+    behandelt das als ConfigEntryNotReady und verbindet sich automatisch
+    wieder. Hinweis aus der Spec: Die WebUI blendet den Reboot-Button in
+    kritischen Situationen aus (/system/reboot/enabled); hier drücken wir
+    grundsätzlich zu - die Verantwortung liegt beim Nutzer.
+    """
+
+    _attr_icon = "mdi:restart"
+
+    def __init__(self, coordinator, entry, api) -> None:
+        super().__init__(coordinator, entry, "reboot")
+        self._api = api
+        self._attr_name = "Wallbox Neustart"
+
+    async def async_press(self) -> None:
+        try:
+            await self._api.async_reboot()
+        except WlwbxApiError as err:
+            _LOGGER.warning("Wallbox-Neustart fehlgeschlagen: %s", err)
+            return
+        # Kein Refresh erzwingen: Die Box verschwindet für einige
+        # Sekunden, HA verbindet sich danach automatisch wieder.
