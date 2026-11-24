@@ -5,13 +5,13 @@ from datetime import timedelta
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
 )
 
-from .api import WlwbxApiClient, WlwbxApiError
+from .api import WlwbxApiClient, WlwbxApiError, WlwbxAuthError
 from .const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, CONF_VERIFY_SSL, DEFAULT_SCAN_INTERVAL, DOMAIN
 from .sse import WlwbxEventSubscriber
 
@@ -42,7 +42,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "typeplate": "/system/electronic-typeplate",
         "temperatures": "/system/device-temperatures",
         "socket_outlet": "/system/socket-outlet",
-        "reboot_enabled": "/system/reboot/enabled",
         "errors": "/system/errors",
         "charging_curve": "/dashboard/charging-curve",
         "update_info": "/system/update/info",
@@ -69,6 +68,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         for key, path in POLL_PATHS.items():
             try:
                 data[key] = await api.async_get(path)
+            except WlwbxAuthError as err:
+                # Zugangsdaten gelten nicht mehr -> Reauth-Flow starten
+                # statt alle 30 s mit dem alten Passwort anzulaufen.
+                raise ConfigEntryAuthFailed(
+                    "Anmeldung abgelehnt – Zugangsdaten geändert? Reauth nötig."
+                ) from err
             except WlwbxApiError as err:
                 if key in REQUIRED:
                     raise UpdateFailed(str(err)) from err
@@ -86,6 +91,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     try:
         await coordinator.async_config_entry_first_refresh()
+    except ConfigEntryAuthFailed:
+        await api.close()
+        raise
     except UpdateFailed as err:
         await api.close()
         raise ConfigEntryNotReady(str(err)) from err
