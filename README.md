@@ -61,7 +61,7 @@ Everything runs locally via the REST API on your network.
 
 ## Manual Installation
 1. clone this repository
-2. copy the files from `custom_components/WLWBX_Assistant` in `/custom_components/wlwbx` in our Home Assistant
+2. copy the files from `custom_components/WLWBX_Assistant` in `/custom_components/WLWBX_Assistant` in our Home Assistant
 3. reboot Home Assistant
    
 ## Configuration
