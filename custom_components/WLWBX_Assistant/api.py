@@ -241,6 +241,14 @@ class WlwbxApiClient:
         """Steckdoseninformationen abrufen (GET /system/socket-outlet)."""
         return await self.async_get("/system/socket-outlet") or {}
 
+    async def async_get_reboot_enabled(self) -> dict[str, Any]:
+        """Reboot-Freigabe abrufen (GET /system/reboot/enabled).
+
+        Lock der WebUI: {"enabled": false} = Neustart derzeit verboten
+        (z.B. in kritischen Situationen vom Backend gesetzt).
+        """
+        return await self.async_get("/system/reboot/enabled") or {}
+
     async def async_set_socket_outlet(self, lock_activation: str) -> None:
         """Verriegelungsmodus setzen (PUT /system/socket-outlet).
 
