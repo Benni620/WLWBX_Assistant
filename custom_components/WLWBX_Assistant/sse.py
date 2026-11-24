@@ -8,7 +8,7 @@ from typing import Any
 
 import aiohttp
 
-from .api import WlwbxApiClient
+from .api import WlwbxApiClient, WlwbxAuthError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,6 +26,7 @@ EVENT_TO_POLL = {
     "energyMeterUpdate": ("energy_meter", "/system/energy-meter"),
     "electronicTypeplateUpdate": ("typeplate", "/system/electronic-typeplate"),
     "deviceTemperaturesUpdate": ("temperatures", "/system/device-temperatures"),
+    "socketOutletUpdate": ("socket_outlet", "/system/socket-outlet"),
     "updateInfoUpdate": ("update_info", "/system/update/info"),
 }
 
@@ -47,6 +48,15 @@ class WlwbxEventSubscriber:
                 await self._stream_once()
             except asyncio.CancelledError:
                 raise
+            except WlwbxAuthError as err:
+                # Zugangsdaten gelten nicht mehr. Nicht weiter anrennen
+                # (jeder Reconnect gleich ein neuer Login-Versuch) –
+                # Subscriber stoppen; der Reauth-Flow übernimmt.
+                _LOGGER.error(
+                    "SSE: Anmeldung abgelehnt (%s) – Subscriber gestoppt, "
+                    "Reauth nötig", err
+                )
+                self._stop = True
             except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("SSE-Stream abgebrochen: %s", err)
             if self._stop:
@@ -127,7 +137,10 @@ class WlwbxEventSubscriber:
             key, path = EVENT_TO_POLL[event]
             try:
                 updates[key] = await self._api.async_get(path)
-            except Exception as err:  # noqa: BLE001
+            except WlwbxAuthError:
+                # Zugehörigen Login nicht wiederholen -> Loop stoppen
+                raise
+            except WlwbxApiError as err:  # noqa: BLE001
                 _LOGGER.debug("SSE: %s nicht abrufbar: %s", path, err)
                 return
 
