@@ -5,7 +5,7 @@ from typing import Any
 import aiohttp
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 
 from .api import WlwbxApiClient, WlwbxApiError, WlwbxAuthError
@@ -127,6 +127,43 @@ class WlwbxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
         return self.async_show_form(
             step_id="reauth_confirm",
+            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
+            errors=errors,
+        )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        return WlwbxOptionsFlow()
+
+
+class WlwbxOptionsFlow(config_entries.OptionsFlow):
+    """Passwort-Wechsel ohne Neu-Anlegen: Entry -> Konfigurieren."""
+
+    async def async_step_init(self, user_input=None):
+        errors: dict[str, str] = {}
+        entry = self.config_entry
+        if user_input is not None:
+            data = {
+                **entry.data,
+                CONF_PASSWORD: user_input[CONF_PASSWORD],
+            }
+            try:
+                await _test_connection(self.hass, data)
+            except WlwbxAuthError:
+                errors["base"] = "invalid_auth"
+            except aiohttp.ClientError:
+                errors["base"] = "cannot_connect"
+            except Exception:  # noqa: BLE001
+                _LOGGER.exception("Unerwarteter Fehler im Options Flow")
+                errors["base"] = "unknown"
+            else:
+                # Passwort im Entry aktualisieren und Integration neu laden
+                self.hass.config_entries.async_update_entry(entry, data=data)
+                await self.hass.config_entries.async_reload(entry.entry_id)
+                return self.async_create_entry(title="", data={})
+        return self.async_show_form(
+            step_id="init",
             data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
             errors=errors,
         )
