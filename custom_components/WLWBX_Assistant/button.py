@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .api import WlwbxApiError
+from .binary_sensor import CONNECTED_STATES
 from .entity import WlwbxEntity
 from .const import DOMAIN
 
@@ -90,11 +91,16 @@ class ErrorResetButton(WlwbxEntity, ButtonEntity):
 class RebootButton(WlwbxEntity, ButtonEntity):
     """Neustart der Wallbox via POST /system/reboot/exec (Rolle: technician).
 
-    Achtung: Die Box ist während des Neustarts nicht erreichbar. HA
-    behandelt das als ConfigEntryNotReady und verbindet sich automatisch
-    wieder. Hinweis aus der Spec: Die WebUI blendet den Reboot-Button in
-    kritischen Situationen aus (/system/reboot/enabled); hier drücken wir
-    grundsätzlich zu - die Verantwortung liegt beim Nutzer.
+    Gesperrt, wenn
+    a) die Backend-Sperre greift (GET /system/reboot/enabled -> false),
+       so wie die WebUI den Button in kritischen Situationen ausgraut, oder
+    b) ein Fahrzeug verbunden ist bzw. geladen wird (Charging-State).
+    In beiden Fällen ist der Button ausgegraut und der Grund steht als
+    Attribut `blocked_reason` an der Entität.
+
+    Nach dem Drücken verschwindet die Box für einige Sekunden; HA
+    behandelt das als ConfigEntryNotReady und verbindet sich danach
+    automatisch wieder.
     """
 
     _attr_icon = "mdi:restart"
@@ -103,6 +109,23 @@ class RebootButton(WlwbxEntity, ButtonEntity):
         super().__init__(coordinator, entry, "reboot")
         self._api = api
         self._attr_name = "Wallbox Neustart"
+
+    def _blocked_reason(self) -> str | None:
+        enabled = self.coordinator.data.get("reboot_enabled")
+        if isinstance(enabled, dict) and enabled.get("enabled") is False:
+            return "Die Wallbox hat den Neustart derzeit gesperrt (Sperre des Backends, z.B. in kritischen Situationen)."
+        raw = (self.coordinator.data.get("state") or {}).get("value")
+        if raw in CONNECTED_STATES:
+            return "Ein Fahrzeug ist verbunden bzw. es wird gerade geladen. Bitte Kabel abziehen oder Ladung beenden, dann erneut versuchen."
+        return None
+
+    @property
+    def available(self) -> bool:
+        return self._blocked_reason() is None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"blocked_reason": self._blocked_reason()}
 
     async def async_press(self) -> None:
         try:
