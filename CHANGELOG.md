@@ -1,5 +1,17 @@
 # Changelog
 
+## [v0.2.0-alpha.3] 
+
+### Fixed
+
+- Fixed Config-Flow, It won't be added if you enter the wrong password.
+- Fixed Auth-Failure + Reauth-Flow, automatically starts the re-authentication process and doesn't get stuck in a never-ending retry loop
+
+### Removed
+
+- Removed Firmware-Install
+- Removed Reboot action
+
 ## [v0.2.0-alpha.2.1] 
 
 ### Fixed
