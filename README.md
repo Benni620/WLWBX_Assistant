@@ -36,7 +36,7 @@ Everything runs locally via the REST API on your network.
 | Get charging curve data​ |🟢|
 | Get lifetime statistics​ |🟢|
 | Get info about software updates of the Wallbox |🟡|
-| Start software updates of the Wallbox |🟡|
+| Start software updates of the Wallbox |🔵|
 | Get system errors |🟡|
 | Delete all errors |🟢|
 | Get electronic typeplate |🟢|
@@ -44,7 +44,7 @@ Everything runs locally via the REST API on your network.
 | Get socket outlet information |🔵*|
 | Set socket outlet information |🔵*|
 | Get device temperatures |🟢|
-| Server-sent event stream publishing events and value updates |🟡|
+| Server-sent event stream publishing events and value updates |🟢|
 | Login |🟢|
 | Refresh access token |🟢|
 | performs the reboot action |🔵|
@@ -53,7 +53,7 @@ Everything runs locally via the REST API on your network.
 🟢 Implemented an tested
 🟡 Implemented, has to be tested
 🔴 not working
-`*` Available depending on hardware
+`*` Available depending on hardware / software
 
 ## HACS Custom repositories Installation
 * Follow the Link below
