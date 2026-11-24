@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.2.0-alpha.3] 
+
+###Fixed
+
+- Fixed missing file
+
+### Added
+
 ## [v0.2.0-alpha.2] 
 
 ### Added
