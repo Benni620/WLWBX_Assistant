@@ -1,8 +1,8 @@
 # Changelog
 
-## [v0.2.0-alpha.3] 
+## [v0.2.0-alpha.2.1] 
 
-###Fixed
+### Fixed
 
 - Fixed missing file
 - Fixed socket lock on cable version
