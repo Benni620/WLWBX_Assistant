@@ -142,6 +142,11 @@ async def async_setup_entry(
             state_class=SensorStateClass.MEASUREMENT, icon="mdi:thermometer",
             entity_category=EntityCategory.DIAGNOSTIC,
         ),
+        WlwbxSensor(
+            coordinator, entry, "socket_outlet", "Steckdosen-Verriegelung",
+            icon="mdi:lock",
+            entity_category=EntityCategory.DIAGNOSTIC,
+        ),
     ]
     async_add_entities(entities)
 
@@ -235,6 +240,9 @@ class WlwbxSensor(WlwbxEntity, SensorEntity):
                 "temp_emmc": "eMmcTemperature",
             }.get(kind)
             return temps.get(field) if field else None
+        if kind == "socket_outlet":
+            # /system/socket-outlet: lockStatus-Enum als Text
+            return (data.get("socket_outlet") or {}).get("lockStatus")
         if kind == "error_count":
             errors = data.get("errors")
             if not isinstance(errors, list):
@@ -292,6 +300,10 @@ class WlwbxSensor(WlwbxEntity, SensorEntity):
             if key:
                 attrs["state_localized"] = self._locale("common", key)
             return attrs
+
+        if self._kind == "socket_outlet":
+            outlet = self.coordinator.data.get("socket_outlet") or {}
+            return {"lockActivation": outlet.get("lockActivation")}
 
         # Fehler-Details (DTC, Ursache, Abhilfemaßnahme, Kategorie, Zeitstempel)
         if self._kind == "error_count":
