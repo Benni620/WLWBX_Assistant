@@ -27,7 +27,11 @@ async def async_setup_entry(
             DirectAuthorizationButton(coordinator, entry, api, allow=True),
             DirectAuthorizationButton(coordinator, entry, api, allow=False),
             ErrorResetButton(coordinator, entry, api),
-            RebootButton(coordinator, entry, api),
+            # RebootButton deaktiviert: POST /system/reboot/exec und
+            # GET /system/reboot/enabled wurden auf realer Hardware mit
+            # 403 verweigert (Firmware-Abweichung zur Spec bzw. Rollen-
+            # frage un geklärt). Erst wieder aktivieren, wenn Reboot
+            # verifiziert ist und die Sperre geklärt ist.
         ]
     )
 
