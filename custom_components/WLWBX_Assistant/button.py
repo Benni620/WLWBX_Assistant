@@ -131,7 +131,16 @@ class RebootButton(WlwbxEntity, ButtonEntity):
         try:
             await self._api.async_reboot()
         except WlwbxApiError as err:
-            _LOGGER.warning("Wallbox-Neustart fehlgeschlagen: %s", err)
+            if "403" in str(err):
+                _LOGGER.info(
+                    "Wallbox verweigert den Neustart (403): Vermutlich "
+                    "aktive Reboot-Sperre der Box/Firmware oder fehlende "
+                    "Rollenberechtigung. Neustart ggf. über die WebUI "
+                    "oder nach Ablauf der Sperre erneut versuchen (%s)",
+                    err,
+                )
+            else:
+                _LOGGER.warning("Wallbox-Neustart fehlgeschlagen: %s", err)
             return
         # Kein Refresh erzwingen: Die Box verschwindet für einige
         # Sekunden, HA verbindet sich danach automatisch wieder.
