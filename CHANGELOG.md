@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.2.0-alpha.3.2] 
+
+### Added
+
+- Added: Ability to change password and IP/hostname 
+
 ## [v0.2.0-alpha.3] 
 
 ### Fixed
