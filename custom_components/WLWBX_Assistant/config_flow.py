@@ -138,16 +138,24 @@ class WlwbxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class WlwbxOptionsFlow(config_entries.OptionsFlow):
-    """Passwort-Wechsel ohne Neu-Anlegen: Entry -> Konfigurieren."""
+    """Host/IP, Benutzer und Passwort ändern ohne Neu-Anlegen.
+
+    Aufruf: Entry -> Konfigurieren. Passwort-Feld leer lassen = unverändert.
+    _test_connection schreibt das funktionierende Scheme (https/http)
+    zurück in den Host, bevor gespeichert wird.
+    """
 
     async def async_step_init(self, user_input=None):
         errors: dict[str, str] = {}
         entry = self.config_entry
         if user_input is not None:
-            data = {
-                **entry.data,
-                CONF_PASSWORD: user_input[CONF_PASSWORD],
-            }
+            data = dict(entry.data)
+            data[CONF_HOST] = user_input[CONF_HOST]
+            data[CONF_USERNAME] = user_input[CONF_USERNAME]
+            data[CONF_VERIFY_SSL] = user_input.get(CONF_VERIFY_SSL, False)
+            # Passwort leer = unverändert lassen
+            if user_input.get(CONF_PASSWORD):
+                data[CONF_PASSWORD] = user_input[CONF_PASSWORD]
             try:
                 await _test_connection(self.hass, data)
             except WlwbxAuthError:
@@ -158,12 +166,32 @@ class WlwbxOptionsFlow(config_entries.OptionsFlow):
                 _LOGGER.exception("Unerwarteter Fehler im Options Flow")
                 errors["base"] = "unknown"
             else:
-                # Passwort im Entry aktualisieren und Integration neu laden
-                self.hass.config_entries.async_update_entry(entry, data=data)
+                # Daten + Titel (enthält den Host) aktualisieren, neu laden
+                self.hass.config_entries.async_update_entry(
+                    entry,
+                    data=data,
+                    title=f"Wallbox {data[CONF_HOST]}",
+                )
                 await self.hass.config_entries.async_reload(entry.entry_id)
                 return self.async_create_entry(title="", data={})
-        return self.async_show_form(
-            step_id="init",
-            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
-            errors=errors,
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_HOST,
+                    description={"suggested_value": entry.data.get(CONF_HOST, "")},
+                ): str,
+                vol.Required(
+                    CONF_USERNAME,
+                    description={
+                        "suggested_value": entry.data.get(CONF_USERNAME, "technician")
+                    },
+                ): str,
+                # Leer lassen = nicht ändern
+                vol.Optional(CONF_PASSWORD): str,
+                vol.Optional(
+                    CONF_VERIFY_SSL,
+                    default=entry.data.get(CONF_VERIFY_SSL, False),
+                ): bool,
+            }
         )
+        return self.async_show_form(step_id="init", data_schema=schema, errors=errors)
