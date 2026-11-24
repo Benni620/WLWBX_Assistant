@@ -16,7 +16,7 @@ from .const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, CONF_VERIFY_SSL, DEF
 from .sse import WlwbxEventSubscriber
 
 _LOGGER = logging.getLogger(__name__)
-PLATFORMS = [Platform.BUTTON, Platform.NUMBER, Platform.SENSOR, Platform.SWITCH, Platform.UPDATE]
+PLATFORMS = [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.NUMBER, Platform.SELECT, Platform.SENSOR, Platform.SWITCH, Platform.UPDATE]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -41,6 +41,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "energy_meter": "/system/energy-meter",
         "typeplate": "/system/electronic-typeplate",
         "temperatures": "/system/device-temperatures",
+        "socket_outlet": "/system/socket-outlet",
         "errors": "/system/errors",
         "charging_curve": "/dashboard/charging-curve",
         "update_info": "/system/update/info",
