@@ -123,9 +123,28 @@ class WlwbxApiClient:
             data={"user": self._username, "pass": self._password},
         ) as resp:
             if resp.status in (400, 401):
+                # Body enthält AuthenticationFail: attempt/maxAttempts/
+                # remainingPenaltyTime -> dem User etwas Handfestes zeigen
+                detail = ""
+                try:
+                    info = await resp.json(content_type=None)
+                except ValueError:
+                    info = {}
+                if isinstance(info, dict):
+                    extras = []
+                    attempt = info.get("attempt")
+                    if attempt is not None:
+                        extras.append(
+                            f"Versuch {attempt}/{info.get('maxAttempts', '?')}"
+                        )
+                    penalty = info.get("remainingPenaltyTime")
+                    if penalty not in (None, 0):
+                        extras.append(f"Sperre noch {int(penalty)} Sekunden")
+                    if extras:
+                        detail = " (" + ", ".join(extras) + ")"
                 raise WlwbxAuthError(
                     f"Login fehlgeschlagen ({resp.status}) – "
-                    "Pass Penalty-Timer läuft ggf. noch."
+                    f"Passwort und Rolle prüfen{detail}"
                 )
             resp.raise_for_status()
             auth = resp.headers.get("Authorization")
