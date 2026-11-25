@@ -37,12 +37,12 @@ Everything runs locally via the REST API on your network.
 | Get lifetime statistics​ |🟢|
 | Get info about software updates of the Wallbox |🟡|
 | Start software updates of the Wallbox |🔵|
-| Get system errors |🟡|
+| Get system errors |🟢|
 | Delete all errors |🟢|
 | Get electronic typeplate |🟢|
 | Get Energy Meter information​ |🟢*|
-| Get socket outlet information |🔵*|
-| Set socket outlet information |🔵*|
+| Get socket outlet information |🟢*|
+| Set socket outlet information |🟢*|
 | Get device temperatures |🟢|
 | Server-sent event stream publishing events and value updates |🟢|
 | Login |🟢|
