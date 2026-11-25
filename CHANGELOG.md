@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.2.0]
+## [v0.2.0]
 
 ### Added
 
@@ -70,19 +70,19 @@
 **Monitoring & Statistics**
 - Errors with a complete description and corrective actions in text.
 
-## [0.1.2]
+## [v0.1.2]
 
 ### Fixed
 - Fixed coordinator data access across sensor, switch, number, button and update platforms.
 - Fixed integration setup in Home Assistant.
   
-## [0.1.1]
+## [v0.1.1]
 
 ### Fixed
 - Fixed integration domain mismatch preventing the configuration flow from loading.
 - Fixed integration setup in Home Assistant.
 
-## [0.1.0] - Initial Release
+## [v0.1.0] - Initial Release
 
 ### Added
 
