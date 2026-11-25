@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.2.0]
+
+### Added
+
+**Monitoring & Statistics**
+- Errors with a complete description and corrective actions in text.
+
+**Charging Control**
+- Charging state with binary switches
+
+**Device Information & Maintenance**
+- perform reboot
+- get and set the state of the socket outlet
+- Added: Ability to change password and IP/hostname
+
+### Fixed
+
+- Fixed Config-Flow, It won't be added if you enter the wrong password.
+- Fixed Auth-Failure + Reauth-Flow, automatically starts the re-authentication process and doesn't get stuck in a never-ending retry loop
+- Fixed socket lock on cable version
+
+### Removed
+
+- Removed Firmware-Install (Cannot be tested yet without the new software; therefore, the feature has been disabled as a precaution)
+- Removed Reboot action (This is currently not possible due to the software's user permissions on the device.)
+
 ## [v0.2.0-alpha.3.2] 
 
 ### Added
