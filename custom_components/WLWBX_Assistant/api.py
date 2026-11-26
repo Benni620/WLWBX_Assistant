@@ -25,7 +25,16 @@ class WlwbxApiError(Exception):
 
 
 class WlwbxAuthError(WlwbxApiError):
-    """Authentication failed (401/403)."""
+    """Anmeldung fehlgeschlagen (401 beim Login) -> Reauth ist die Lösung."""
+
+
+class WlwbxForbiddenError(WlwbxApiError):
+    """Auth ok, aber Endpoint verweigert (403: Rolle/Firmware/Backend-Sperre).
+
+    NICHT als Auth-Fehler behandeln: Ein Reauth mit korrektem Passwort
+    ändert daran nichts (siehe Reboot-403 auf realer Hardware). Optional
+    endpunkt -> Entity einfach ausblenden.
+    """
 
 
 class WlwbxApiClient:
@@ -180,7 +189,9 @@ class WlwbxApiClient:
             status, raw = await self._attempt(method, path, json)
 
         if status == 403:
-            raise WlwbxAuthError(
+            # Bewusst NICHT WlwbxAuthError: Login ist ok, nur die
+            # Berechtigung für diesen Endpoint fehlt (Rolle/Firmware).
+            raise WlwbxForbiddenError(
                 f"{method} {path}: 403 – Rolle '{self._username}' nicht berechtigt"
             )
         if status == 404:
