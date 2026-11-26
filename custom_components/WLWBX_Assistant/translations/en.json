@@ -2,22 +2,53 @@
   "config": {
     "step": {
       "user": {
-        "title": "WLWBX Wallbox",
-        "description": "Enter wallbox connection details.",
+        "title": "Connect wallbox",
+        "description": "IP/hostname, wallbox credentials and SSL settings.",
         "data": {
-          "host": "Host (e.g. http://192.168.1.10)",
-          "username": "Username",
+          "host": "Host / IP (optionally with https://)",
+          "username": "Username (default: technician)",
+          "password": "Password",
+          "verify_ssl": "Verify SSL certificate (leave unchecked for self-signed certificates)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate wallbox",
+        "description": "Login to the wallbox failed (password changed?). Please enter the current password.",
+        "data": {
           "password": "Password"
         }
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect",
-      "invalid_auth": "Invalid credentials",
-      "unknown": "Unknown error"
+      "cannot_connect": "Failed to connect to the wallbox",
+      "invalid_auth": "Login rejected – check password/role (the wallbox penalty timer may still be active)",
+      "unknown": "Unexpected error"
     },
     "abort": {
-      "already_configured": "This wallbox is already configured."
+      "already_configured": "This wallbox is already configured",
+      "reauth_successful": "Re-authentication was successful"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure wallbox",
+        "description": "Change host/IP, username or password. Leave the password empty to keep it unchanged.",
+        "data": {
+          "host": "Host / IP (optionally with https://)",
+          "username": "Username",
+          "password": "New password (leave empty to keep unchanged)",
+          "verify_ssl": "Verify SSL certificate"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the wallbox",
+      "invalid_auth": "Login rejected – check password/role (the wallbox penalty timer may still be active)",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "reauth_successful": "Settings saved"
     }
   }
 }
