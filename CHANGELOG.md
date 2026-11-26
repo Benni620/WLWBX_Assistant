@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.2.1-alpha.1]
+
+### Fixed
+
+- Fixed NameError (import WlwbxApiError from .api)
+- Fided 403 error is treated as an incorrect password
+- Fixed missing translations
+- Fixed 401 was ignored after logging in again
+- A 403 error on a REQUIRED endpoint was ignored
+- No unique ID protection
+
 ## [v0.2.0]
 
 ### Added
