@@ -32,8 +32,12 @@ def _candidate_hosts(host: str) -> list[str]:
     return ["https://" + host, "http://" + host]
 
 
-async def _test_connection(hass: HomeAssistant, data: dict[str, str]) -> None:
-    """Raise on connection or auth failure. Probiert ggf. beide Schemes."""
+async def _test_connection(hass: HomeAssistant, data: dict[str, str]) -> str | None:
+    """Raise on connection or auth failure. Probiert ggf. beide Schemes.
+
+    Liefert die Seriennummer aus dem Typeplate (für die Unique-ID) oder
+    None, wenn der Typeplate-Endpoint nicht verfügbar ist.
+    """
     last_err: Exception | None = None
     for host in _candidate_hosts(data[CONF_HOST]):
         client = WlwbxApiClient(
@@ -42,10 +46,17 @@ async def _test_connection(hass: HomeAssistant, data: dict[str, str]) -> None:
             data[CONF_PASSWORD],
             verify_ssl=data.get(CONF_VERIFY_SSL, True),
         )
+        serial: str | None = None
         try:
             await client.async_login()
             # Ein lesender Aufruf gegen die Rolle prüfen
             await client.async_get_charging_state()
+            # Seriennummer für die Unique-ID (nicht kritisch)
+            try:
+                tp = await client.async_get("/system/electronic-typeplate")
+                serial = (tp or {}).get("serialNumber")
+            except WlwbxApiError:
+                serial = None
         except aiohttp.ClientError as err:
             # Mit diesem Scheme nicht erreichbar -> nächstes probieren
             last_err = err
@@ -62,7 +73,7 @@ async def _test_connection(hass: HomeAssistant, data: dict[str, str]) -> None:
             await client.close()
         # Funktionierendes Scheme in die Eingabe zurückschreiben
         data[CONF_HOST] = host
-        return
+        return serial
     if last_err is not None:
         raise last_err
     raise WlwbxApiError("Kein Scheme erreichbar")
@@ -89,6 +100,11 @@ class WlwbxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unerwarteter Fehler im Config Flow")
                 errors["base"] = "unknown"
             else:
+                # Dieselbe Box nur einmal: Unique-ID aus der Seriennummer
+                await self.async_set_unique_id(
+                    serial or f"host-{user_input[CONF_HOST]}"
+                )
+                self._abort_if_unique_id_configured()
                 return self.async_create_entry(
                     title=f"Wallbox {user_input[CONF_HOST]}", data=user_input
                 )
