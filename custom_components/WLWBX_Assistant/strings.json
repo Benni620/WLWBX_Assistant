@@ -2,22 +2,53 @@
   "config": {
     "step": {
       "user": {
-        "title": "WLWBX Wallbox",
-        "description": "Verbindungsdaten für die Wallbox eingeben.",
+        "title": "Wallbox verbinden",
+        "description": "IP/Hostname, Zugangsdaten der Wallbox und SSL-Einstellungen.",
         "data": {
-          "host": "Host (z.B. http://192.168.1.10)",
-          "username": "Benutzername",
+          "host": "Host / IP (optional mit https://)",
+          "username": "Benutzername (Standard: technician)",
+          "password": "Passwort",
+          "verify_ssl": "SSL-Zertifikat prüfen (bei selbstsigniertem Zertifikat deaktiviert lassen)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Wallbox neu authentifizieren",
+        "description": "Die Anmeldung an der Wallbox ist fehlgeschlagen (Passwort geändert?). Bitte das aktuelle Passwort eingeben.",
+        "data": {
           "password": "Passwort"
         }
       }
     },
     "error": {
-      "cannot_connect": "Verbindung fehlgeschlagen",
-      "invalid_auth": "Ungültige Anmeldedaten",
-      "unknown": "Unbekannter Fehler"
+      "cannot_connect": "Verbindung zur Wallbox fehlgeschlagen",
+      "invalid_auth": "Anmeldung abgelehnt – Passwort/Rolle prüfen (ggf. Penalty-Timer der Box aktiv)",
+      "unknown": "Unerwarteter Fehler"
     },
     "abort": {
-      "already_configured": "Diese Wallbox ist bereits konfiguriert."
+      "already_configured": "Diese Wallbox ist bereits eingerichtet",
+      "reauth_successful": "Neu-Authentifizierung erfolgreich"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Wallbox konfigurieren",
+        "description": "Host/IP, Benutzer oder Passwort ändern. Passwort leer lassen = unverändert.",
+        "data": {
+          "host": "Host / IP (optional mit https://)",
+          "username": "Benutzername",
+          "password": "Neues Passwort (leer = unverändert)",
+          "verify_ssl": "SSL-Zertifikat prüfen"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung zur Wallbox fehlgeschlagen",
+      "invalid_auth": "Anmeldung abgelehnt – Passwort/Rolle prüfen (ggf. Penalty-Timer der Box aktiv)",
+      "unknown": "Unerwarteter Fehler"
+    },
+    "abort": {
+      "reauth_successful": "Einstellungen gespeichert"
     }
   }
 }
