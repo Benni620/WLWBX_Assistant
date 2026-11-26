@@ -187,6 +187,12 @@ class WlwbxApiClient:
         if status == 401:
             await self.async_login()
             status, raw = await self._attempt(method, path, json)
+            if status == 401:
+                # Auch nach frischem Login 401 -> Credentials gelten nicht
+                raise WlwbxAuthError(
+                    f"{method} {path}: 401 trotz frischem Login – "
+                    "Zugangsdaten prüfen"
+                )
 
         if status == 403:
             # Bewusst NICHT WlwbxAuthError: Login ist ok, nur die
