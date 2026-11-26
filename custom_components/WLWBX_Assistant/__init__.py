@@ -77,7 +77,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 ) from err
             except WlwbxForbiddenError as err:
                 # Rollen-/Firmware-Sperre: Pfad existiert, darf aber (noch)
-                # nicht beantwortet werden -> wie 404 behandeln, KEIN Reauth
+                # nicht beantwortet werden -> KEIN Reauth auslösen.
+                # Required endpoints: wie 500 behandeln (nicht halbtot laufen)
+                if key in REQUIRED:
+                    raise UpdateFailed(
+                        f"{path}: 403 – Rolle nicht berechtigt: {err}"
+                    ) from err
                 data[key] = None
                 _LOGGER.debug(
                     "%s verweigert (403, Rolle/Firmware): %s", path, err
