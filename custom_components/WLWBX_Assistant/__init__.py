@@ -71,9 +71,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             except WlwbxAuthError as err:
                 # Zugangsdaten gelten nicht mehr -> Reauth-Flow starten
                 # statt alle 30 s mit dem alten Passwort anzulaufen.
+                # Wichtig: 403 (WlwbxForbiddenError) fällt hier NICHT rein.
                 raise ConfigEntryAuthFailed(
                     "Anmeldung abgelehnt – Zugangsdaten geändert? Reauth nötig."
                 ) from err
+            except WlwbxForbiddenError as err:
+                # Rollen-/Firmware-Sperre: Pfad existiert, darf aber (noch)
+                # nicht beantwortet werden -> wie 404 behandeln, KEIN Reauth
+                data[key] = None
+                _LOGGER.debug(
+                    "%s verweigert (403, Rolle/Firmware): %s", path, err
+                )
             except WlwbxApiError as err:
                 if key in REQUIRED:
                     raise UpdateFailed(str(err)) from err
