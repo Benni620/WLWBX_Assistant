@@ -8,7 +8,7 @@ from typing import Any
 
 import aiohttp
 
-from .api import WlwbxApiClient, WlwbxAuthError
+from .api import WlwbxApiClient, WlwbxApiError, WlwbxAuthError
 
 _LOGGER = logging.getLogger(__name__)
 
