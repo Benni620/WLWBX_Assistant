@@ -9,7 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .api import WlwbxApiError
+from .api import WlwbxApiError, WlwbxForbiddenError
 from .binary_sensor import CONNECTED_STATES
 from .entity import WlwbxEntity
 from .const import DOMAIN
@@ -134,17 +134,16 @@ class RebootButton(WlwbxEntity, ButtonEntity):
     async def async_press(self) -> None:
         try:
             await self._api.async_reboot()
+        except WlwbxForbiddenError as err:
+            _LOGGER.info(
+                "Wallbox verweigert den Neustart (403): Vermutlich "
+                "aktive Reboot-Sperre der Box/Firmware oder fehlende "
+                "Rollenberechtigung. Neustart ggf. über die WebUI "
+                "oder nach Ablauf der Sperre erneut versuchen (%s)",
+                err,
+            )
         except WlwbxApiError as err:
-            if "403" in str(err):
-                _LOGGER.info(
-                    "Wallbox verweigert den Neustart (403): Vermutlich "
-                    "aktive Reboot-Sperre der Box/Firmware oder fehlende "
-                    "Rollenberechtigung. Neustart ggf. über die WebUI "
-                    "oder nach Ablauf der Sperre erneut versuchen (%s)",
-                    err,
-                )
-            else:
-                _LOGGER.warning("Wallbox-Neustart fehlgeschlagen: %s", err)
+            _LOGGER.warning("Wallbox-Neustart fehlgeschlagen: %s", err)
             return
         # Kein Refresh erzwingen: Die Box verschwindet für einige
         # Sekunden, HA verbindet sich danach automatisch wieder.
