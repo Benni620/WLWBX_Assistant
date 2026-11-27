@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.2.3]
+
+### Fixed
+
+- Fixed Hassfest check
+
 ## [v0.2.2]
 
 ### Fixed
