@@ -1,6 +1,9 @@
 """Support for WLWBX wallboxes."""
+import asyncio
 import logging
 from datetime import timedelta
+
+import aiohttp
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -11,7 +14,12 @@ from homeassistant.helpers.update_coordinator import (
     UpdateFailed,
 )
 
-from .api import WlwbxApiClient, WlwbxApiError, WlwbxAuthError
+from .api import (
+    WlwbxApiClient,
+    WlwbxApiError,
+    WlwbxAuthError,
+    WlwbxForbiddenError,
+)
 from .const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, CONF_VERIFY_SSL, DEFAULT_SCAN_INTERVAL, DOMAIN
 from .sse import WlwbxEventSubscriber
 
@@ -58,7 +66,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     LOCALES: dict = {locale_language: None}
     try:
         LOCALES[locale_language] = await api.async_get_locale(locale_language)
-    except WlwbxApiError as err:
+    except (WlwbxApiError, aiohttp.ClientError, asyncio.TimeoutError) as err:
+        # Locale-Datei ist optional: Verbindungsprobleme beim Setup hier
+        # nicht hochreichen (sonst bricht das Setup komplett), sondern
+        # ohne Übersetzungen weitermachen. Bei REQUIRED-Endpunkten
+        # greift der normale ConfigEntryNotReady-Pfad.
         _LOGGER.debug(
             "locales/default/%s.json nicht verfügbar: %s", locale_language, err
         )
