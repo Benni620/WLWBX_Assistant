@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.2.2]
+
+### Fixed
+
+- Fixed Icon size
+
 ## [v0.2.1]
 
 ### Fixed
