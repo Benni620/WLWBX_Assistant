@@ -7,6 +7,11 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
+from homeassistant.helpers.selector import (
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 
 from .api import WlwbxApiClient, WlwbxApiError, WlwbxAuthError
 from .const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, CONF_VERIFY_SSL, DOMAIN
@@ -17,7 +22,10 @@ STEP_USER_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_HOST): str,
         vol.Required(CONF_USERNAME, default="technician"): str,
-        vol.Required(CONF_PASSWORD): str,
+        # Passwort nicht im Klartext anzeigen
+        vol.Required(CONF_PASSWORD): TextSelector(
+            TextSelectorConfig(type=TextSelectorType.PASSWORD)
+        ),
         # Bei selbst signiertem Zertifikat (https) standardmäßig aus
         vol.Optional(CONF_VERIFY_SSL, default=False): bool,
     }
@@ -91,7 +99,7 @@ class WlwbxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
-                await _test_connection(self.hass, user_input)
+                serial = await _test_connection(self.hass, user_input)
             except WlwbxAuthError:
                 errors["base"] = "invalid_auth"
             except aiohttp.ClientError:
@@ -143,7 +151,13 @@ class WlwbxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_PASSWORD): TextSelector(
+                        TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                    )
+                }
+            ),
             errors=errors,
         )
 
@@ -202,8 +216,10 @@ class WlwbxOptionsFlow(config_entries.OptionsFlow):
                         "suggested_value": entry.data.get(CONF_USERNAME, "technician")
                     },
                 ): str,
-                # Leer lassen = nicht ändern
-                vol.Optional(CONF_PASSWORD): str,
+                # Leer lassen = nicht ändern; nicht im Klartext anzeigen
+                vol.Optional(CONF_PASSWORD): TextSelector(
+                    TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                ),
                 vol.Optional(
                     CONF_VERIFY_SSL,
                     default=entry.data.get(CONF_VERIFY_SSL, False),
